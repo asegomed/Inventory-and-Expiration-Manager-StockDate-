@@ -1,0 +1,13 @@
+@startuml
+top to bottom direction
+skinparam componentStyle rectangle
+
+rectangle "Presentation\n\nReceives volunteer interactions \nin the web browser (e.g., new batch form)." as UI
+
+rectangle "Business logic\n\nValidates input data, checks date \nvalidity, and applies inventory rules." as BLL
+
+rectangle "Data access\n\nExecutes the operation to permanently \nsave the information in SQLite." as DAL
+
+UI --> BLL
+BLL --> DAL
+@enduml

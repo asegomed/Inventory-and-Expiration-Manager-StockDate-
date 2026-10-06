@@ -1,0 +1,40 @@
+@startuml
+skinparam maxMessageSize 150
+autonumber
+
+actor "Volunteer" as User
+boundary "InventoryController" as UI
+control "InventoryManager" as BLL
+entity "BatchEntity" as Entity
+database "InventoryRepository\n(SQLite)" as DB
+control "AlertObserver" as AsyncAlert
+
+User -> UI : submit(newBatchForm)
+activate UI
+
+UI -> BLL : registerBatch(batchDTO)
+activate BLL
+
+BLL -> BLL : validate(batchDTO)
+alt Validation Failed (Negative Quantity or Invalid Date)
+    BLL --> UI : throw IllegalArgumentException
+    UI --> User : Display Error Message
+else Validation Passed
+    BLL -> Entity ** : <<create>> BatchEntity(batchDTO)
+
+    BLL -> DB : save(batchEntity)
+    activate DB
+    DB --> BLL : savedEntity
+    deactivate DB
+
+    BLL --> UI : HttpResponse.ok()
+    UI --> User : Display Success Message
+
+    BLL -> AsyncAlert : notifyObservers()
+    note right: Asynchronous trigger to update dashboards
+    activate AsyncAlert
+    deactivate AsyncAlert
+end
+deactivate BLL
+deactivate UI
+@enduml

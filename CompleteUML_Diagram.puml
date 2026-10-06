@@ -1,0 +1,79 @@
+@startuml
+skinparam classAttributeIconSize 0
+top to bottom direction
+
+package "Data Access Layer (Entities & Interfaces)" {
+    class UserEntity {
+        - id: UUID
+        - username: String
+        - role: String
+        - email: String
+        + getRole(): String
+        + setRole(role: String): void
+    }
+
+    class BatchEntity {
+        - batchId: UUID
+        - productName: String
+        - quantity: int
+        - expirationDate: LocalDate
+        - entryDate: LocalDate
+        + calculateDaysUntilExpiration(): int
+        + isValid(): boolean
+    }
+
+    class CategoryEntity {
+        - categoryId: UUID
+        - name: String
+        - storageType: String
+        + getName(): String
+    }
+
+    interface InventoryRepository {
+        + findByExpirationDateBefore(date: LocalDate): List<BatchEntity>
+        + save(batch: BatchEntity): BatchEntity
+    }
+}
+
+package "Business Logic Layer (Services & Patterns)" {
+    interface AlertObserver {
+        + updateAlerts(expiringBatches: List<BatchEntity>): void
+    }
+
+    class ExpirationAlertService implements AlertObserver {
+        - thresholdDays: int
+        + updateAlerts(expiringBatches: List<BatchEntity>): void
+        + generateWasteReport(): ReportDTO
+    }
+
+    class InventoryManager {
+        - observers: List<AlertObserver>
+        - repository: InventoryRepository
+        + addObserver(o: AlertObserver): void
+        + registerBatch(batchDTO: BatchDTO): void
+        - notifyObservers(): void
+    }
+}
+
+package "Presentation Layer (DTOs & Controllers)" {
+    class BatchDTO {
+        + productName: String
+        + quantity: int
+        + daysUntilExpiration: int
+        + statusColor: String
+    }
+
+    class InventoryController {
+        - manager: InventoryManager
+        + createBatch(dto: BatchDTO): HttpResponse
+        + getDashboardAlerts(): List<BatchDTO>
+    }
+}
+
+UserEntity "1" -- "0..*" BatchEntity : registers >
+CategoryEntity "1" -- "0..*" BatchEntity : categorizes >
+InventoryManager "1" o-- "0..*" AlertObserver : notifies >
+InventoryManager "1" --> "1" InventoryRepository : uses >
+InventoryController "1" --> "1" InventoryManager : calls >
+BatchEntity ..> BatchDTO : converts to >
+@enduml

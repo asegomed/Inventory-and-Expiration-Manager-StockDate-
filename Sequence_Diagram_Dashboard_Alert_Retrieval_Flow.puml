@@ -1,0 +1,39 @@
+@startuml
+skinparam maxMessageSize 150
+autonumber
+
+actor "Volunteer" as User
+boundary "InventoryController" as UI
+control "InventoryManager" as BLL
+database "InventoryRepository\n(SQLite)" as DB
+entity "BatchEntity" as Entity
+entity "BatchDTO" as DTO
+
+User -> UI : GET /dashboard
+activate UI
+
+UI -> BLL : getDashboardAlerts()
+activate BLL
+
+BLL -> DB : findByExpirationDateBefore(currentDate + 7 days)
+activate DB
+DB --> BLL : List<BatchEntity>
+deactivate DB
+
+BLL -> BLL : validateAndSort(List<BatchEntity>)
+
+loop For each BatchEntity in List
+    BLL -> Entity : calculateDaysUntilExpiration()
+    activate Entity
+    Entity --> BLL : days: int
+    deactivate Entity
+
+    BLL -> DTO ** : <<create>> BatchDTO(name, quantity, days)
+end
+
+BLL --> UI : List<BatchDTO>
+deactivate BLL
+
+UI --> User : Render HTML Dashboard (Status Colors)
+deactivate UI
+@enduml
