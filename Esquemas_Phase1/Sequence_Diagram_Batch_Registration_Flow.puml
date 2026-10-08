@@ -1,40 +1,38 @@
-@startuml
-skinparam maxMessageSize 150
+@startuml Sequence_Diagram_Batch_Registration_Flow
+skinparam shadowing false
+skinparam sequenceMessageAlign left
 autonumber
 
-actor "Volunteer" as User
-boundary "InventoryController" as UI
-control "InventoryManager" as BLL
-entity "BatchEntity" as Entity
-database "InventoryRepository\n(SQLite)" as DB
-control "AlertObserver" as AsyncAlert
+actor Volunteer
+participant "Browser (JS)" as UI
+boundary InventoryController
+control InventoryManager
+entity BatchEntity
+database "InventoryRepository\n(SQLite)" as BatchRepo
+database "MovementRepository\n(SQLite)" as MoveRepo
+control "ExpirationAlertService\n<<AlertObserver>>" as Alerts
 
-User -> UI : submit(newBatchForm)
-activate UI
+Volunteer -> UI : fill in and submit "Add New Batch" form
+UI -> InventoryController : POST /api/batches\n(CreateBatchRequest JSON)
+InventoryController -> InventoryManager : registerBatch(req, user)
+InventoryManager -> InventoryManager : validateBatch(req)
 
-UI -> BLL : registerBatch(batchDTO)
-activate BLL
-
-BLL -> BLL : validate(batchDTO)
-alt Validation Failed (Negative Quantity or Invalid Date)
-    BLL --> UI : throw IllegalArgumentException
-    UI --> User : Display Error Message
-else Validation Passed
-    BLL -> Entity ** : <<create>> BatchEntity(batchDTO)
-
-    BLL -> DB : save(batchEntity)
-    activate DB
-    DB --> BLL : savedEntity
-    deactivate DB
-
-    BLL --> UI : HttpResponse.ok()
-    UI --> User : Display Success Message
-
-    BLL -> AsyncAlert : notifyObservers()
-    note right: Asynchronous trigger to update dashboards
-    activate AsyncAlert
-    deactivate AsyncAlert
+alt Validation failed (quantity <= 0, use-by date in the past, missing field)
+  InventoryManager --> InventoryController : throw IllegalArgumentException
+  InventoryController --> UI : 400 Bad Request (error message)
+  UI --> Volunteer : highlight invalid fields
+else Validation passed
+  group @Transactional
+    InventoryManager -> BatchEntity ** : <<create>> from req
+    InventoryManager -> BatchRepo : save(batchEntity)
+    BatchRepo --> InventoryManager : savedBatch (with batchId)
+    InventoryManager -> MoveRepo : save(ENTRY movement)
+    MoveRepo --> InventoryManager : savedMovement
+  end
+  InventoryManager ->> Alerts : notifyObservers() -> onStockChanged()\n[asynchronous, @Async]
+  note right of Alerts : clears cachedSummary;\nnext dashboard request\nrebuilds it
+  InventoryManager --> InventoryController : BatchDTO
+  InventoryController --> UI : 201 Created (BatchDTO JSON)
+  UI --> Volunteer : show success message
 end
-deactivate BLL
-deactivate UI
 @enduml

@@ -1,39 +1,44 @@
-@startuml
-skinparam maxMessageSize 150
+@startuml Sequence_Diagram_Dashboard_Alert_Retrieval_Flow
+skinparam shadowing false
+skinparam sequenceMessageAlign left
 autonumber
 
-actor "Volunteer" as User
-boundary "InventoryController" as UI
-control "InventoryManager" as BLL
-database "InventoryRepository\n(SQLite)" as DB
-entity "BatchEntity" as Entity
-entity "BatchDTO" as DTO
+actor Volunteer
+participant "Browser (JS)" as UI
+boundary InventoryController
+control InventoryManager
+control ExpirationAlertService as Alerts
+database "InventoryRepository\n(SQLite)" as BatchRepo
+entity BatchEntity
+entity BatchDTO
 
-User -> UI : GET /dashboard
-activate UI
+Volunteer -> UI : open dashboard
+UI -> InventoryController : GET /api/dashboard
+InventoryController -> InventoryManager : getDashboard()
+InventoryManager -> Alerts : getSummary()
 
-UI -> BLL : getDashboardAlerts()
-activate BLL
-
-BLL -> DB : findByExpirationDateBefore(currentDate + 7 days)
-activate DB
-DB --> BLL : List<BatchEntity>
-deactivate DB
-
-BLL -> BLL : validateAndSort(List<BatchEntity>)
-
-loop For each BatchEntity in List
-    BLL -> Entity : calculateDaysUntilExpiration()
-    activate Entity
-    Entity --> BLL : days: int
-    deactivate Entity
-
-    BLL -> DTO ** : <<create>> BatchDTO(name, quantity, days)
+alt cachedSummary exists and cachedDate == today
+  Alerts --> InventoryManager : cachedSummary
+else cache empty (stock changed) or day changed
+  Alerts -> BatchRepo : findByActiveTrueOrderByExpirationDateAsc()
+  BatchRepo --> Alerts : List<BatchEntity> (FEFO order)
+  loop for each BatchEntity
+    Alerts -> BatchEntity : calculateDaysUntilExpiration()
+    BatchEntity --> Alerts : days
+    Alerts -> Alerts : classify(days)
+    Alerts -> BatchDTO ** : <<create>> (name, quantity, days, status)
+  end
+  Alerts -> Alerts : build DashboardDTO\n(counts + pinned items), store in cache
+  Alerts --> InventoryManager : DashboardDTO
 end
 
-BLL --> UI : List<BatchDTO>
-deactivate BLL
+InventoryManager --> InventoryController : DashboardDTO
+InventoryController --> UI : 200 OK (DashboardDTO JSON)
+UI --> Volunteer : render counts, colour badges\nand expired-stock banner
 
-UI --> User : Render HTML Dashboard (Status Colors)
-deactivate UI
+note over InventoryController, BatchRepo
+If SQLite fails, the DataAccessException reaches the controller,
+which returns 503 Service Unavailable. The UI shows an error banner,
+never "No expiring items". An empty stock returns a DashboardDTO with zero counts.
+end note
 @enduml

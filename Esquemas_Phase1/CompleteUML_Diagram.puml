@@ -1,79 +1,274 @@
-@startuml
+@startuml StockDate_ClassDiagram
 skinparam classAttributeIconSize 0
-top to bottom direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+hide empty members
 
-package "Data Access Layer (Entities & Interfaces)" {
-    class UserEntity {
-        - id: UUID
-        - username: String
-        - role: String
-        - email: String
-        + getRole(): String
-        + setRole(role: String): void
-    }
+' =====================================================
+' PRESENTATION LAYER
+' =====================================================
+package "Presentation Layer (REST Controllers & DTOs)" {
 
-    class BatchEntity {
-        - batchId: UUID
-        - productName: String
-        - quantity: int
-        - expirationDate: LocalDate
-        - entryDate: LocalDate
-        + calculateDaysUntilExpiration(): int
-        + isValid(): boolean
-    }
+  class InventoryController <<RestController>> {
+    - inventoryManager: InventoryManager
+    + createBatch(req: CreateBatchRequest): ResponseEntity<BatchDTO>
+    + searchStock(keyword: String, categoryId: UUID): ResponseEntity<List<BatchDTO>>
+    + dispatch(req: DispatchRequest): ResponseEntity<Void>
+    + getDashboard(): ResponseEntity<DashboardDTO>
+  }
 
-    class CategoryEntity {
-        - categoryId: UUID
-        - name: String
-        - storageType: String
-        + getName(): String
-    }
+  class AdminController <<RestController>> {
+    - inventoryManager: InventoryManager
+    - reportService: ReportService
+    - userService: UserService
+    + discard(req: DiscardRequest): ResponseEntity<Void>
+    + getWasteReport(year: int, month: int): ResponseEntity<ReportDTO>
+    + createUser(req: CreateUserRequest): ResponseEntity<UserDTO>
+    + changeRole(userId: UUID, role: Role): ResponseEntity<UserDTO>
+    + deactivateUser(userId: UUID): ResponseEntity<Void>
+  }
 
-    interface InventoryRepository {
-        + findByExpirationDateBefore(date: LocalDate): List<BatchEntity>
-        + save(batch: BatchEntity): BatchEntity
-    }
+  class CreateBatchRequest <<DTO>> {
+    + productName: String
+    + categoryId: UUID
+    + quantity: int
+    + expirationDate: LocalDate
+    + dateType: DateType
+    + storageLocation: String
+  }
+
+  class DispatchRequest <<DTO>> {
+    + batchId: UUID
+    + quantity: int
+    + overrideReason: String [0..1]
+  }
+
+  class DiscardRequest <<DTO>> {
+    + batchId: UUID
+    + quantity: int
+    + reason: DiscardReason
+  }
+
+  class CreateUserRequest <<DTO>> {
+    + username: String
+    + password: String
+    + fullName: String
+    + role: Role
+  }
+
+  class BatchDTO <<DTO>> {
+    + batchId: UUID
+    + productName: String
+    + categoryName: String
+    + quantity: int
+    + storageLocation: String
+    + expirationDate: LocalDate
+    + daysUntilExpiration: int
+    + status: StatusColor
+  }
+
+  class DashboardDTO <<DTO>> {
+    + expiredCount: int
+    + redCount: int
+    + yellowCount: int
+    + greenCount: int
+    + pinnedItems: List<BatchDTO>
+  }
+
+  class ReportDTO <<DTO>> {
+    + period: YearMonth
+    + receivedUnits: int
+    + dispatchedUnits: int
+    + discardedUnits: int
+    + wasteRate: Double [0..1]
+  }
+
+  class UserDTO <<DTO>> {
+    + id: UUID
+    + username: String
+    + fullName: String
+    + role: Role
+    + active: boolean
+  }
 }
 
+' =====================================================
+' BUSINESS LOGIC LAYER
+' =====================================================
 package "Business Logic Layer (Services & Patterns)" {
-    interface AlertObserver {
-        + updateAlerts(expiringBatches: List<BatchEntity>): void
-    }
 
-    class ExpirationAlertService implements AlertObserver {
-        - thresholdDays: int
-        + updateAlerts(expiringBatches: List<BatchEntity>): void
-        + generateWasteReport(): ReportDTO
-    }
+  class InventoryManager <<Service>> {
+    - observers: List<AlertObserver>
+    - batchRepository: InventoryRepository
+    - movementRepository: MovementRepository
+    - alertService: ExpirationAlertService
+    + registerBatch(req: CreateBatchRequest, user: UserEntity): BatchDTO
+    + searchStock(keyword: String, categoryId: UUID): List<BatchDTO>
+    + dispatch(req: DispatchRequest, user: UserEntity): void
+    + discard(req: DiscardRequest, user: UserEntity): void
+    + getDashboard(): DashboardDTO
+    + addObserver(o: AlertObserver): void
+    - validateBatch(req: CreateBatchRequest): void
+    - notifyObservers(): void
+  }
 
-    class InventoryManager {
-        - observers: List<AlertObserver>
-        - repository: InventoryRepository
-        + addObserver(o: AlertObserver): void
-        + registerBatch(batchDTO: BatchDTO): void
-        - notifyObservers(): void
-    }
+  interface AlertObserver {
+    + onStockChanged(): void
+  }
+
+  class ExpirationAlertService <<Service>> {
+    - redThresholdDays: int = 7
+    - yellowThresholdDays: int = 14
+    - cachedSummary: DashboardDTO
+    - cachedDate: LocalDate
+    + onStockChanged(): void
+    + classify(daysUntilExpiration: int): StatusColor
+    + getSummary(): DashboardDTO
+  }
+
+  class ReportService <<Service>> {
+    - movementRepository: MovementRepository
+    + generateWasteReport(period: YearMonth): ReportDTO
+  }
+
+  class UserService <<Service>> {
+    - userRepository: UserRepository
+    - passwordEncoder: PasswordEncoder
+    + createUser(req: CreateUserRequest): UserDTO
+    + changeRole(userId: UUID, role: Role, currentUserId: UUID): UserDTO
+    + deactivateUser(userId: UUID, currentUserId: UUID): void
+    - ensureAdminRemains(): void
+  }
+
+  enum StatusColor {
+    EXPIRED
+    RED
+    YELLOW
+    GREEN
+  }
 }
 
-package "Presentation Layer (DTOs & Controllers)" {
-    class BatchDTO {
-        + productName: String
-        + quantity: int
-        + daysUntilExpiration: int
-        + statusColor: String
-    }
+' =====================================================
+' DATA ACCESS LAYER
+' =====================================================
+package "Data Access Layer (Entities & Repositories)" {
 
-    class InventoryController {
-        - manager: InventoryManager
-        + createBatch(dto: BatchDTO): HttpResponse
-        + getDashboardAlerts(): List<BatchDTO>
-    }
+  class UserEntity <<Entity>> {
+    - id: UUID
+    - username: String
+    - passwordHash: String
+    - fullName: String
+    - role: Role
+    - active: boolean
+    - createdAt: LocalDateTime
+    + getRole(): Role
+    + isActive(): boolean
+  }
+
+  class CategoryEntity <<Entity>> {
+    - categoryId: UUID
+    - name: String
+    - storageType: String
+    + getName(): String
+  }
+
+  class BatchEntity <<Entity>> {
+    - batchId: UUID
+    - productName: String
+    - quantity: int
+    - expirationDate: LocalDate
+    - dateType: DateType
+    - entryDate: LocalDate
+    - storageLocation: String
+    - active: boolean
+    - createdAt: LocalDateTime
+    + calculateDaysUntilExpiration(): int
+    + isExpired(): boolean
+    + decreaseQuantity(units: int): void
+  }
+
+  class StockMovementEntity <<Entity>> {
+    - movementId: UUID
+    - type: MovementType
+    - quantity: int
+    - timestamp: LocalDateTime
+    - discardReason: DiscardReason [0..1]
+    - overrideReason: String [0..1]
+  }
+
+  interface InventoryRepository {
+    + save(batch: BatchEntity): BatchEntity
+    + findById(id: UUID): Optional<BatchEntity>
+    + findByExpirationDateBeforeAndActiveTrue(date: LocalDate): List<BatchEntity>
+    + findByProductNameAndActiveTrueOrderByExpirationDateAsc(name: String): List<BatchEntity>
+    + search(keyword: String, categoryId: UUID): List<BatchEntity>
+  }
+
+  interface MovementRepository {
+    + save(m: StockMovementEntity): StockMovementEntity
+    + findByTimestampBetween(from: LocalDateTime, to: LocalDateTime): List<StockMovementEntity>
+  }
+
+  interface UserRepository {
+    + save(u: UserEntity): UserEntity
+    + findByUsername(username: String): Optional<UserEntity>
+    + countByRoleAndActiveTrue(role: Role): long
+  }
+
+  enum Role {
+    ADMIN
+    VOLUNTEER
+  }
+
+  enum MovementType {
+    ENTRY
+    DISPATCH
+    DISCARD
+  }
+
+  enum DiscardReason {
+    EXPIRED
+    DAMAGED
+    SPOILED
+    OTHER
+  }
+
+  enum DateType {
+    USE_BY
+    BEST_BEFORE
+  }
 }
 
+' =====================================================
+' RELATIONSHIPS
+' =====================================================
+
+' Presentation -> Business
+InventoryController --> InventoryManager : calls
+AdminController --> InventoryManager : calls
+AdminController --> ReportService : calls
+AdminController --> UserService : calls
+
+' Business -> Data (via interfaces)
+InventoryManager --> InventoryRepository : uses
+InventoryManager --> MovementRepository : uses
+InventoryManager --> ExpirationAlertService : classifies with
+ReportService --> MovementRepository : uses
+UserService --> UserRepository : uses
+
+' Observer pattern
+InventoryManager "1" o-- "0..*" AlertObserver : notifies
+AlertObserver <|.. ExpirationAlertService
+
+' Entity -> DTO conversion
+BatchEntity ..> BatchDTO : converts to
+DashboardDTO "1" *-- "0..*" BatchDTO
+
+' Domain associations
 UserEntity "1" -- "0..*" BatchEntity : registers >
 CategoryEntity "1" -- "0..*" BatchEntity : categorizes >
-InventoryManager "1" o-- "0..*" AlertObserver : notifies >
-InventoryManager "1" --> "1" InventoryRepository : uses >
-InventoryController "1" --> "1" InventoryManager : calls >
-BatchEntity ..> BatchDTO : converts to >
+BatchEntity "1" -- "1..*" StockMovementEntity : has history >
+UserEntity "1" -- "0..*" StockMovementEntity : performs >
+
 @enduml
