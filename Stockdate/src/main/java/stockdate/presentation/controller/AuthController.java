@@ -1,4 +1,4 @@
 package com.example.stockdate.presentation.controller;
 
-public class AuthController {
+public class AuthController { //To do: Implement authentication and authorization logic
 }

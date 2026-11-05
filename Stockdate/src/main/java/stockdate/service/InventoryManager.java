@@ -17,6 +17,7 @@ import java.util.NoSuchElementException;
 
 import static com.example.stockdate.presentation.dto.response.BatchDTO.ExpirationStatus;
 
+// For validating and managing inventory batches in the database
 @Service
 public class InventoryManager {
 

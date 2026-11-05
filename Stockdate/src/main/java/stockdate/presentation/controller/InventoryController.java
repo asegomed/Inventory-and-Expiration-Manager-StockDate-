@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+//To do: The getter and setters of the InventoryController.
 @RestController
 @RequestMapping("/api/inventory")
 public class InventoryController {

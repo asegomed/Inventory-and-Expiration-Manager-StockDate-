@@ -10,6 +10,7 @@
 </head>
 <body>
 <div class="app-shell">
+    <!-- Sidebar navigation
     <aside class="sidebar">
         <a class="brand" href="#dashboard" aria-label="StockDate home">
             <span class="brand-mark" aria-hidden="true">S</span>
@@ -33,7 +34,7 @@
             <span class="connection-dot" aria-hidden="true"></span>
             Local application
         </div>
-    </aside>
+    </aside>-->
 
     <main class="main-content">
         <header class="topbar">
@@ -41,7 +42,7 @@
                 <span class="brand-mark" aria-hidden="true">S</span>
                 <span>StockDate</span>
             </div>
-            <p class="topbar-note">Simple food inventory management</p>
+            <p class="topbar-note">Food inventory management</p>
             <button class="button button-primary topbar-action" type="button" data-open-register>
                 <span aria-hidden="true">＋</span> New batch
             </button>
@@ -53,27 +54,24 @@
             <section id="dashboard-view" class="view">
                 <div class="page-heading">
                     <div>
-                        <p class="eyebrow">DASHBOARD</p>
+                        <p class="eyebrow">Dashboaurd</p>
                         <h1>Inventory overview</h1>
-                        <p class="muted">View your batches and check their expiration dates.</p>
+                        <p class="muted">Batches and their expiration dates.</p>
                     </div>
                     <span id="today-label" class="date-label"></span>
                 </div>
 
                 <div class="summary-grid" aria-label="Expiration overview">
                     <article class="summary-card">
-                        <div class="summary-icon total-icon" aria-hidden="true">▤</div>
                         <p class="summary-label">Registered batches</p>
                         <p id="total-count" class="summary-value">0</p>
                     </article>
                     <article class="summary-card">
-                        <div class="summary-icon red-icon" aria-hidden="true">!</div>
                         <p class="summary-label">Expiring soon</p>
                         <p id="red-count" class="summary-value">0</p>
                         <span class="summary-help">Within the next 7 days</span>
                     </article>
                     <article class="summary-card">
-                        <div class="summary-icon yellow-icon" aria-hidden="true">◷</div>
                         <p class="summary-label">Next expiration</p>
                         <p id="next-expiration" class="summary-value summary-date">—</p>
                         <span id="next-product" class="summary-help">No batches registered</span>
@@ -84,7 +82,7 @@
                     <div class="card-heading">
                         <div>
                             <h2>Expiration dates</h2>
-                            <p class="muted">Batches with the nearest expiration dates.</p>
+                            <p class="muted">Batches with the nearest expiration dates:</p>
                         </div>
                         <button class="text-button" type="button" data-view="inventory">View inventory</button>
                     </div>

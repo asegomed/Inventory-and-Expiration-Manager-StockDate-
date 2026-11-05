@@ -38,7 +38,8 @@ To run the tests on Windows:
   expiring within seven days, and the next expiration date.
 - Browse batches ordered by expiration date and search by product, category,
   or storage location.
-- Edit an existing batch and save its changes to SQLite.
+- Select **Edit** beside a batch to open the form with its current values,
+  change them, and save the update to the same SQLite record.
 - Register a batch with its product, category, quantity, storage location,
   expiration date, and date type (`USE_BY` or `BEST_BEFORE`).
 - Validate required fields, positive quantities, and past `USE_BY` dates.

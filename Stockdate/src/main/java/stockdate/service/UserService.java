@@ -1,4 +1,4 @@
 package com.example.stockdate.service;
 
-public class UserService {
+public class UserService { // UserService implementation goes here
 }

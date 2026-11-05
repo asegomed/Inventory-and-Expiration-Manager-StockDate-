@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
-
+// To open http://localhost:8080 in the default browser once the server has started.
 @Component
 @ConditionalOnProperty(name = "stockdate.browser.open", havingValue = "true", matchIfMissing = true)
 public class BrowserLauncher {

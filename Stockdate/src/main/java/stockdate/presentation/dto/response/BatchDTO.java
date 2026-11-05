@@ -4,6 +4,7 @@ import com.example.stockdate.ExpirationDateType;
 
 import java.time.LocalDate;
 
+// DTO class for representing batch information in the response (what user sees in the web)
 public record BatchDTO(
         long id,
         String productName,
