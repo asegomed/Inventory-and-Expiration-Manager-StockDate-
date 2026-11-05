@@ -1,187 +1,99 @@
 # StockDate
 
-StockDate es el esqueleto funcional de una aplicacion web para consultar y
-registrar lotes de alimentos y revisar sus fechas de caducidad. El frontend
-interactua con una API Spring Boot. En esta fase los lotes solo se guardan en
-memoria: al parar la aplicacion se pierden.
+StockDate is a web application for tracking food inventory batches and their
+expiration dates. Its Java and Spring Boot backend serves an HTML, CSS, and
+JavaScript interface and exposes an inventory API. Batch data is stored in a
+local SQLite database, so it remains available after the application closes.
 
-## Requisitos y herramientas
+## Requirements
 
-- **Java/JDK:** JDK 17 o posterior instalado en el equipo. Gradle compila el
-  codigo para Java 17 (`--release 17`). `run.bat` intenta localizar un JDK
-  existente; no descarga ni instala Java.
-- **Gradle:** se utiliza Gradle Wrapper 9.8.2, incluido en el proyecto. No hace
-  falta instalar Gradle por separado. Gradle descarga las dependencias del
-  proyecto la primera vez que se ejecuta.
-- **Spring Boot 4.1.2:** inicia el servidor web y publica los archivos estaticos
-  y la API.
-- **HTML, CSS y JavaScript:** tecnologias del frontend, servidas por Spring Boot.
-- **IntelliJ IDEA:** entorno de desarrollo recomendado; abre el proyecto Gradle
-  desde la carpeta que contiene `settings.gradle`.
-- **Git:** control de versiones del proyecto. No se incluye configuracion de un
-  tablero de GitHub Projects.
-- **SQLite y Docker:** previstos para fases futuras, pero todavia no se usan.
-- **Navegador:** al iniciar, la aplicacion intenta abrir `http://localhost:8080`
-  en el navegador predeterminado del sistema. Si Chrome es el predeterminado se
-  abrira en Google Chrome; tambien se puede abrir esa direccion manualmente.
+- JDK 17 or later. The project compiles for Java 17.
+- Windows: run the application with `run.bat` from the project directory.
+- Gradle is provided by the included Wrapper; a separate Gradle installation
+  is not required.
+- An internet connection may be needed on the first run to download Gradle and
+  project dependencies.
 
-## Iniciar y detener la aplicacion
+## Run the application
 
-En Windows, abre una terminal de IntelliJ en la carpeta del proyecto y ejecuta:
+Open a terminal in the directory containing `settings.gradle`, then run:
 
 ```powershell
 .\run.bat
 ```
 
-## Que se puede hacer ahora
+The application starts at `http://localhost:8080` and attempts to open that
+address in the default browser. If the browser does not open automatically,
+navigate to the address manually. Stop the application with `Ctrl+C`.
 
-- **Resumen:** ver la cantidad de lotes, los que caducan en los proximos siete
-  dias y la siguiente fecha de caducidad.
-- **Inventario:** ver los lotes ordenados por fecha y buscar por producto,
-  categoria o ubicacion.
-- **Registro:** crear un lote con producto, categoria, cantidad, ubicacion,
-  fecha y tipo de fecha (`USE_BY` o `BEST_BEFORE`).
-- **Validacion:** no permite campos obligatorios vacios ni cantidades menores
-  que uno. Tambien impide fechas pasadas para productos `USE_BY`.
-
-La API implementada es `GET /api/inventory`, para consultar los lotes, y
-`POST /api/inventory`, para registrar uno. Si los datos no son validos, devuelve
-un error HTTP 400 con un mensaje.
-
-Los lotes solo persisten mientras la aplicacion esta abierta. No se han
-implementado login, roles, movimientos de salida o descarte, informes ni
-persistencia en SQLite.
-
-## Estructura del proyecto
-
-```text
-Stockdate/
-├── Information/                         # Documentacion de referencia del proyecto
-├── gradle/wrapper/                      # Componentes del Gradle Wrapper
-├── src/
-│   ├── main/
-│   │   ├── java/com/example/stockdate/
-│   │   │   ├── config/                  # Apertura del navegador y futuras configuraciones
-│   │   │   ├── persistence/             # Paquetes reservados para SQLite
-│   │   │   │   ├── entity/
-│   │   │   │   └── repository/
-│   │   │   ├── presentation/            # Comunicacion HTTP y DTOs
-│   │   │   │   ├── controller/
-│   │   │   │   └── dto/
-│   │   │   │       ├── request/
-│   │   │   │       └── response/
-│   │   │   ├── service/                 # Reglas y gestion de inventario
-│   │   │   ├── ExpirationDateType.java
-│   │   │   └── StockdateApplication.java
-│   │   └── resources/
-│   │       ├── static/                  # Interfaz web servida por Spring Boot
-│   │       │   ├── css/
-│   │       │   ├── js/
-│   │       │   └── index.html
-│   │       └── application.properties   # Configuracion de Spring Boot
-│   └── test/
-│       └── java/com/example/stockdate/  # Pruebas unitarias y de integracion
-├── .gitattributes                       # Reglas de atributos de Git
-├── .gitignore                           # Archivos generados o locales ignorados
-├── build.gradle                         # Plugins, dependencias y compilacion Java
-├── gradlew / gradlew.bat                # Gradle Wrapper para Unix y Windows
-├── run.bat                              # Lanzador de StockDate en Windows
-├── settings.gradle                      # Nombre y configuracion raiz de Gradle
-├── Stockdate.iml                        # Modulo local de IntelliJ IDEA
-└── README.md                            # Esta guia
-```
-
-### Archivos Java principales
-
-| Archivo | Funcion en esta fase |
-|---|---|
-| `StockdateApplication.java` | Punto de entrada; inicia Spring Boot. |
-| `ExpirationDateType.java` | Tipos de fecha admitidos: `USE_BY` y `BEST_BEFORE`. |
-| `config/BrowserLauncher.java` | Al iniciar la aplicacion intenta abrir el navegador predeterminado; si no esta disponible, registra la direccion en el log. |
-| `config/SecurityConfig.java` | Marcador para configuracion de seguridad futura; esta vacio y no configura autenticacion. |
-| `config/SQLiteDialectConfig.java` | Marcador para SQLite; esta vacio y no configura ni conecta una base de datos. |
-| `presentation/controller/InventoryController.java` | Expone `GET` y `POST /api/inventory`. |
-| `presentation/controller/ApiExceptionHandler.java` | Convierte errores de validacion en respuestas HTTP 400 con un mensaje. |
-| `presentation/controller/AuthController.java` | Marcador para autenticacion futura; no expone endpoints. |
-| `presentation/controller/AdminController.java` | Marcador para funciones de administracion futuras; no expone endpoints. |
-| `presentation/controller/ReportController.java` | Marcador para informes futuros; no expone endpoints. |
-| `presentation/dto/request/CreateBatchRequest.java` | Datos que recibe la API al registrar un lote. |
-| `presentation/dto/request/DispatchRequest.java` | Marcador para solicitudes de salida de stock; vacio. |
-| `presentation/dto/request/DiscardRequest.java` | Marcador para solicitudes de descarte; vacio. |
-| `presentation/dto/request/CreateUserRequest.java` | Marcador para altas de usuario; vacio. |
-| `presentation/dto/response/BatchDTO.java` | Datos del lote que devuelve la API, incluido su estado de caducidad. |
-| `presentation/dto/response/ApiError.java` | Mensaje de error devuelto por la API. |
-| `presentation/dto/response/DashboardDTO.java` | Marcador para respuestas de resumen; vacio. |
-| `presentation/dto/response/ReportDTO.java` | Marcador para respuestas de informes; vacio. |
-| `presentation/dto/response/UserDTO.java` | Marcador para respuestas de usuario; vacio. |
-| `service/InventoryManager.java` | Valida, guarda temporalmente y ordena los lotes en memoria; calcula dias y estado de caducidad. |
-| `service/ExpirationAlertService.java` | Marcador para alertas futuras; vacio. |
-| `service/ReportService.java` | Marcador para informes futuros; vacio. |
-| `service/UserService.java` | Marcador para gestion de usuarios futura; vacio. |
-| `persistence/entity/BatchEntity.java` | Marcador de entidad de lote para persistencia futura; vacio y no conectado a una base de datos. |
-| `persistence/entity/StockMovementEntity.java` | Marcador de movimiento de inventario futuro; vacio. |
-| `persistence/entity/UserEntity.java` | Marcador de entidad de usuario futura; vacio. |
-| `persistence/entity/CategoryEntity.java` | Marcador de entidad de categoria futura; vacio. |
-| `persistence/repository/InventoryRepository.java` | Marcador de repositorio de inventario; vacio y no conectado a SQLite. |
-| `persistence/repository/MovementRepository.java` | Marcador de repositorio de movimientos; vacio. |
-| `persistence/repository/UserRepository.java` | Marcador de repositorio de usuarios; vacio. |
-
-### Frontend y recursos
-
-- `static/index.html`: estructura de la pagina, menu de navegacion, resumen,
-  tabla de inventario y formulario de registro.
-- `static/css/styles.css`: estilos y adaptacion a pantallas pequenas.
-- `static/js/app.js`: navegacion entre secciones, busqueda, carga del inventario
-  y envio del formulario a la API.
-- `application.properties`: define el nombre Spring `Stockdate` y activa la
-  apertura automatica del navegador con `stockdate.browser.open=true`.
-
-### Pruebas
-
-- `StockdateApplicationTests.java`: comprueba que el contexto Spring inicia; la
-  apertura del navegador se desactiva en esta prueba.
-- `service/InventoryManagerTests.java`: prueba registro, orden, estado de
-  caducidad y validaciones del inventario en memoria.
-- `presentation/controller/InventoryControllerTests.java`: prueba HTTP el alta,
-  la consulta del inventario y el rechazo de cantidades no validas.
-- Los archivos `package-info.java` en los directorios de pruebas conservan la
-  estructura de paquetes; no contienen pruebas por si mismos.
-
-## Archivos de construccion y configuracion
-
-- `build.gradle`: usa los plugins Java, Spring Boot y gestion de dependencias;
-  fija compatibilidad Java 17, agrega Spring Web y dependencias de pruebas, y
-  conecta la entrada estandar de `bootRun`.
-- `settings.gradle`: establece el nombre Gradle `Stockdate`.
-- `gradlew`, `gradlew.bat` y `gradle/wrapper/`: ejecutan la version de Gradle
-  fijada por el wrapper sin una instalacion global.
-- `run.bat`: busca un JDK existente en `JAVA_HOME`, `.jdks` de IntelliJ o
-  ubicaciones habituales de Windows; despues ejecuta Gradle con salida simple.
-- `.gitignore`: excluye `.gradle/`, `build/`, configuraciones locales de IDE y
-  otros archivos generados.
-- `.gitattributes`: define como Git gestiona los atributos de los archivos.
-- `.idea/` y `Stockdate.iml`: configuracion local que IntelliJ IDEA puede
-  generar o modificar al abrir el proyecto.
-- `HELP.md`: ayuda generica generada al crear el proyecto Spring; la guia
-  especifica de StockDate esta en este `README.md`.
-- `Information/`: PDF y presentacion usados como referencia de requisitos y
-  arquitectura.
-- `.gradle/` y `build/`: datos locales y resultados generados por Gradle; no
-  forman parte del codigo fuente de la aplicacion. En Windows, los resultados
-  se guardan bajo `%LOCALAPPDATA%\Stockdate\<nombre-del-proyecto>\build` para
-  evitar bloqueos de sincronizacion en carpetas como OneDrive; en otros
-  sistemas se usa `build/` dentro del proyecto.
-
-## Ejecutar las pruebas
-
-En Windows:
+To run the tests on Windows:
 
 ```powershell
 .\gradlew.bat test
 ```
 
-En Linux o macOS:
+## Current functionality
+
+- View an inventory dashboard with the total number of batches, batches
+  expiring within seven days, and the next expiration date.
+- Browse batches ordered by expiration date and search by product, category,
+  or storage location.
+- Edit an existing batch and save its changes to SQLite.
+- Register a batch with its product, category, quantity, storage location,
+  expiration date, and date type (`USE_BY` or `BEST_BEFORE`).
+- Validate required fields, positive quantities, and past `USE_BY` dates.
+- Receive expiration status information for each batch.
+
+The API provides `GET /api/inventory` to list batches, `POST /api/inventory`
+to create one, and `PUT /api/inventory/{id}` to update an existing batch.
+Invalid input returns HTTP 400; updating a batch that does not exist returns
+HTTP 404. User authentication, roles, stock dispatch and discard operations,
+and reports are not implemented yet.
+
+## Project structure
 
 ```text
-./gradlew test
+Stockdate/
+├── Information/                   # Project reference documents
+├── gradle/wrapper/                # Pinned Gradle Wrapper files
+├── src/
+│   ├── main/
+│   │   ├── java/stockdate/        # Backend Java source
+│   │   │   ├── config/            # Application configuration
+│   │   │   ├── persistence/       # Persistence-related packages
+│   │   │   ├── presentation/      # HTTP controllers and API data objects
+│   │   │   └── service/           # Application and inventory logic
+│   │   └── resources/
+│   │       ├── static/            # Web interface (HTML, CSS, JavaScript)
+│   │       ├── application.properties
+│   │       └── schema.sql         # SQLite schema
+│   └── test/                      # Automated tests
+├── build.gradle                   # Plugins, dependencies, and build settings
+├── gradlew / gradlew.bat          # Gradle Wrapper launchers
+├── run.bat                        # Windows application launcher
+├── settings.gradle                # Gradle project name
+└── README.md                      # This guide
 ```
+
+The source tree contains placeholders for planned features. See
+`src/main/java/stockdate/presentation/README.md` for a file-by-file guide to
+the current project skeleton.
+
+## Build output and SQLite data
+
+On Windows, Gradle writes build output to
+`%LOCALAPPDATA%\Stockdate\Stockdate\build` instead of the project directory.
+This avoids conflicts with files synchronized by services such as OneDrive.
+On other systems, Gradle uses the default project `build/` directory.
+
+The SQLite database is stored as `stockdate.db` in the project directory.
+Keep this file if you want to preserve the inventory data when moving or
+backing up the project. It is local application data, not source code.
+
+## Sharing the project
+
+Include `src/`, `gradle/wrapper/`, the Gradle build files, `run.bat`, and the
+documentation. Generated `.gradle/` and `build/` folders and IDE-specific
+`.idea/` settings are not required. Include `stockdate.db` only if the
+recipient should receive the current inventory data. The recipient needs a
+JDK 17 or later and may need internet access on the first run.

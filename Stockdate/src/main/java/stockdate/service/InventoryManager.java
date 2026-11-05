@@ -13,6 +13,7 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static com.example.stockdate.presentation.dto.response.BatchDTO.ExpirationStatus;
 
@@ -43,6 +44,53 @@ public class InventoryManager {
     }
 
     public BatchDTO registerBatch(CreateBatchRequest request) {
+        validateBatch(request);
+
+        String sql = "INSERT INTO batch (product_name, category, quantity, storage_location, "
+                + "expiration_date, expiration_date_type) VALUES (?, ?, ?, ?, ?, ?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, request.productName().trim());
+            ps.setString(2, request.category().trim());
+            ps.setInt(3, request.quantity());
+            ps.setString(4, request.storageLocation().trim());
+            ps.setString(5, request.expirationDate().toString());
+            ps.setString(6, request.expirationDateType().name());
+            return ps;
+        }, keyHolder);
+
+        long id = keyHolder.getKey().longValue();
+        return toDto(id, request.productName().trim(), request.category().trim(),
+                request.quantity(), request.storageLocation().trim(),
+                request.expirationDate(), request.expirationDateType());
+    }
+
+    public BatchDTO updateBatch(long id, CreateBatchRequest request) {
+        validateBatch(request);
+
+        int updatedRows = jdbc.update(
+                "UPDATE batch SET product_name = ?, category = ?, quantity = ?, "
+                        + "storage_location = ?, expiration_date = ?, expiration_date_type = ? "
+                        + "WHERE id = ?",
+                request.productName().trim(),
+                request.category().trim(),
+                request.quantity(),
+                request.storageLocation().trim(),
+                request.expirationDate().toString(),
+                request.expirationDateType().name(),
+                id
+        );
+        if (updatedRows == 0) {
+            throw new NoSuchElementException("Batch not found.");
+        }
+
+        return toDto(id, request.productName().trim(), request.category().trim(),
+                request.quantity(), request.storageLocation().trim(),
+                request.expirationDate(), request.expirationDateType());
+    }
+
+    private void validateBatch(CreateBatchRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Batch data is required.");
         }
@@ -65,25 +113,6 @@ public class InventoryManager {
                 && request.expirationDate().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("The expiration date cannot be in the past.");
         }
-
-        String sql = "INSERT INTO batch (product_name, category, quantity, storage_location, "
-                + "expiration_date, expiration_date_type) VALUES (?, ?, ?, ?, ?, ?)";
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbc.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, request.productName().trim());
-            ps.setString(2, request.category().trim());
-            ps.setInt(3, request.quantity());
-            ps.setString(4, request.storageLocation().trim());
-            ps.setString(5, request.expirationDate().toString());
-            ps.setString(6, request.expirationDateType().name());
-            return ps;
-        }, keyHolder);
-
-        long id = keyHolder.getKey().longValue();
-        return toDto(id, request.productName().trim(), request.category().trim(),
-                request.quantity(), request.storageLocation().trim(),
-                request.expirationDate(), request.expirationDateType());
     }
 
     private BatchDTO toDto(long id, String productName, String category, int quantity,

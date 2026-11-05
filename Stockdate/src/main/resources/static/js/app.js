@@ -1,6 +1,7 @@
 const API_URL = "/api/inventory";
 const views = ["dashboard", "inventory", "register"];
 let batches = [];
+let editingBatchId = null;
 
 const elements = {
     notice: document.querySelector("#notice"),
@@ -13,6 +14,9 @@ const elements = {
     inventoryEmptyCopy: document.querySelector("#inventory-empty-copy"),
     form: document.querySelector("#batch-form"),
     expirationDate: document.querySelector("#expiration-date"),
+    expirationDateType: document.querySelector('[name="expirationDateType"]'),
+    formTitle: document.querySelector("#batch-form-title"),
+    formSubmit: document.querySelector("#batch-form-submit"),
     totalCount: document.querySelector("#total-count"),
     redCount: document.querySelector("#red-count"),
     nextExpiration: document.querySelector("#next-expiration"),
@@ -20,10 +24,10 @@ const elements = {
 };
 
 const statusLabels = {
-    EXPIRED: "Caducado",
-    RED: "Caduca pronto",
-    YELLOW: "Proxima caducidad",
-    GREEN: "En buen estado"
+    EXPIRED: "Expired",
+    RED: "Expiring soon",
+    YELLOW: "Upcoming",
+    GREEN: "In date"
 };
 
 function showNotice(message, isError = false) {
@@ -38,7 +42,7 @@ function hideNotice() {
 }
 
 function formatDate(value) {
-    return new Intl.DateTimeFormat("es-ES", {
+    return new Intl.DateTimeFormat("en-US", {
         day: "numeric",
         month: "short",
         year: "numeric"
@@ -62,15 +66,15 @@ function statusMarkup(batch) {
 
 function expirationText(batch) {
     if (batch.daysUntilExpiration < 0) {
-        return `Caducado hace ${Math.abs(batch.daysUntilExpiration)} dias`;
+        return `Expired ${Math.abs(batch.daysUntilExpiration)} days ago`;
     }
     if (batch.daysUntilExpiration === 0) {
-        return "Caduca hoy";
+        return "Expires today";
     }
     if (batch.daysUntilExpiration === 1) {
-        return "Caduca manana";
+        return "Expires tomorrow";
     }
-    return `En ${batch.daysUntilExpiration} dias`;
+    return `In ${batch.daysUntilExpiration} days`;
 }
 
 function renderDashboard() {
@@ -79,17 +83,17 @@ function renderDashboard() {
 
     const nextBatch = batches.find(batch => batch.daysUntilExpiration >= 0);
     elements.nextExpiration.textContent = nextBatch ? formatDate(nextBatch.expirationDate) : "—";
-    elements.nextProduct.textContent = nextBatch ? nextBatch.productName : "Sin lotes registrados";
+    elements.nextProduct.textContent = nextBatch ? nextBatch.productName : "No batches registered";
 
     const attentionBatches = batches.filter(batch => batch.status !== "GREEN").slice(0, 5);
     if (attentionBatches.length === 0) {
         elements.dashboardBatches.innerHTML = `
             <div class="empty-state">
                 <span class="empty-icon" aria-hidden="true">✓</span>
-                <h2>Todo en orden</h2>
+                <h2>All clear</h2>
                 <p>${batches.length === 0
-                    ? "Registra un lote para comenzar a controlar las caducidades."
-                    : "No hay lotes proximos a caducar."}</p>
+                    ? "Add a batch to start tracking expiration dates."
+                    : "No batches are expiring soon."}</p>
             </div>`;
         return;
     }
@@ -101,7 +105,7 @@ function renderDashboard() {
                 <p class="batch-subtitle">${escapeHtml(batch.category)}</p>
             </div>
             <div class="batch-quantity">
-                <p class="batch-date">${batch.quantity} unidades</p>
+                <p class="batch-date">${batch.quantity} units</p>
                 <p class="batch-date-label">${escapeHtml(batch.storageLocation)}</p>
             </div>
             <div>
@@ -113,25 +117,25 @@ function renderDashboard() {
 }
 
 function renderInventory() {
-    const query = elements.inventorySearch.value.trim().toLocaleLowerCase("es");
+    const query = elements.inventorySearch.value.trim().toLocaleLowerCase("en-US");
     const filteredBatches = batches.filter(batch =>
-        batch.productName.toLocaleLowerCase("es").includes(query)
-        || batch.category.toLocaleLowerCase("es").includes(query)
-        || batch.storageLocation.toLocaleLowerCase("es").includes(query)
+        batch.productName.toLocaleLowerCase("en-US").includes(query)
+        || batch.category.toLocaleLowerCase("en-US").includes(query)
+        || batch.storageLocation.toLocaleLowerCase("en-US").includes(query)
     );
 
     elements.inventoryCount.textContent = `${filteredBatches.length} ${
-        filteredBatches.length === 1 ? "lote" : "lotes"
+        filteredBatches.length === 1 ? "batch" : "batches"
     }`;
     elements.inventoryEmpty.hidden = filteredBatches.length > 0;
     elements.inventoryRows.closest(".table-wrap").hidden = filteredBatches.length === 0;
 
     if (batches.length === 0) {
-        elements.inventoryEmptyTitle.textContent = "Aun no hay lotes";
-        elements.inventoryEmptyCopy.textContent = "Registra el primer lote para verlo aqui.";
+        elements.inventoryEmptyTitle.textContent = "No batches yet";
+        elements.inventoryEmptyCopy.textContent = "Add your first batch to see it here.";
     } else {
-        elements.inventoryEmptyTitle.textContent = "No se encontraron lotes";
-        elements.inventoryEmptyCopy.textContent = "Prueba con otro nombre, categoria o ubicacion.";
+        elements.inventoryEmptyTitle.textContent = "No batches found";
+        elements.inventoryEmptyCopy.textContent = "Try another product, category, or storage location.";
     }
 
     elements.inventoryRows.innerHTML = filteredBatches.map(batch => `
@@ -142,6 +146,7 @@ function renderInventory() {
             <td>${escapeHtml(batch.storageLocation)}</td>
             <td>${formatDate(batch.expirationDate)}</td>
             <td>${statusMarkup(batch)}</td>
+            <td><button class="button button-secondary edit-batch" type="button" data-edit-id="${batch.id}">Edit</button></td>
         </tr>`).join("");
 }
 
@@ -164,26 +169,57 @@ function showView(viewName) {
     hideNotice();
 
     if (viewName === "register") {
+        if (editingBatchId === null) {
+            elements.formTitle.textContent = "Add a batch";
+            elements.formSubmit.textContent = "Save batch";
+        }
+        updateExpirationDateMinimum();
+        elements.form.elements.productName.focus();
+    }
+}
+
+function updateExpirationDateMinimum() {
+    if (elements.expirationDateType.value === "USE_BY") {
         const today = new Date();
         elements.expirationDate.min = [
             today.getFullYear(),
             String(today.getMonth() + 1).padStart(2, "0"),
             String(today.getDate()).padStart(2, "0")
         ].join("-");
-        elements.form.elements.productName.focus();
+    } else {
+        elements.expirationDate.removeAttribute("min");
     }
+}
+
+function editBatch(batchId) {
+    const batch = batches.find(item => item.id === batchId);
+    if (!batch) {
+        showNotice("Could not find that batch. Refresh the inventory and try again.", true);
+        return;
+    }
+
+    editingBatchId = batch.id;
+    elements.form.elements.productName.value = batch.productName;
+    elements.form.elements.category.value = batch.category;
+    elements.form.elements.quantity.value = batch.quantity;
+    elements.form.elements.storageLocation.value = batch.storageLocation;
+    elements.form.elements.expirationDate.value = batch.expirationDate;
+    elements.form.elements.expirationDateType.value = batch.expirationDateType;
+    elements.formTitle.textContent = "Edit batch";
+    elements.formSubmit.textContent = "Save changes";
+    showView("register");
 }
 
 async function loadBatches() {
     try {
         const response = await fetch(API_URL);
         if (!response.ok) {
-            throw new Error("No se pudo cargar el inventario.");
+            throw new Error("Could not load inventory.");
         }
         batches = await response.json();
         render();
     } catch (error) {
-        showNotice(`${error.message} Comprueba que StockDate este en ejecucion e intenta recargar.`, true);
+        showNotice(`${error.message} Make sure StockDate is running, then try refreshing.`, true);
     }
 }
 
@@ -192,10 +228,31 @@ document.querySelectorAll("[data-view]").forEach(button => {
 });
 
 document.querySelectorAll("[data-open-register]").forEach(button => {
-    button.addEventListener("click", () => showView("register"));
+    button.addEventListener("click", () => {
+        editingBatchId = null;
+        elements.form.reset();
+        showView("register");
+    });
 });
 
 elements.inventorySearch.addEventListener("input", renderInventory);
+elements.expirationDateType.addEventListener("change", updateExpirationDateMinimum);
+elements.inventoryRows.addEventListener("click", event => {
+    const editButton = event.target.closest("[data-edit-id]");
+    if (editButton) {
+        editBatch(Number(editButton.dataset.editId));
+    }
+});
+elements.form.addEventListener("reset", () => {
+    editingBatchId = null;
+    elements.formTitle.textContent = "Add a batch";
+    elements.formSubmit.textContent = "Save batch";
+    updateExpirationDateMinimum();
+});
+document.querySelector("[data-cancel-form]").addEventListener("click", () => {
+    elements.form.reset();
+    showView("inventory");
+});
 
 elements.form.addEventListener("submit", async event => {
     event.preventDefault();
@@ -216,30 +273,36 @@ elements.form.addEventListener("submit", async event => {
     };
 
     try {
-        const response = await fetch(API_URL, {
-            method: "POST",
+        const isEditing = editingBatchId !== null;
+        const response = await fetch(isEditing ? `${API_URL}/${editingBatchId}` : API_URL, {
+            method: isEditing ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(request)
         });
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.message || "No se pudo guardar el lote.");
+            throw new Error(result.message || (isEditing ? "Could not update the batch." : "Could not save the batch."));
         }
 
+        editingBatchId = null;
         elements.form.reset();
-        batches.push(result);
+        if (isEditing) {
+            batches = batches.map(batch => batch.id === result.id ? result : batch);
+        } else {
+            batches.push(result);
+        }
         batches.sort((first, second) =>
             first.expirationDate.localeCompare(second.expirationDate) || first.id - second.id
         );
         render();
         showView("inventory");
-        showNotice("Lote registrado correctamente.");
+        showNotice(isEditing ? "Batch updated successfully." : "Batch added successfully.");
     } catch (error) {
-        showNotice(error.message || "No se pudo guardar el lote.", true);
+        showNotice(error.message || "Could not save the batch.", true);
     }
 });
 
-document.querySelector("#today-label").textContent = new Intl.DateTimeFormat("es-ES", {
+document.querySelector("#today-label").textContent = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     day: "numeric",
     month: "long",

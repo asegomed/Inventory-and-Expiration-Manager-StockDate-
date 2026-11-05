@@ -28,7 +28,7 @@ if defined STOCKDATE_JDK (
 ) else (
     where java >nul 2>nul
     if errorlevel 1 (
-        echo No se encontro un JDK instalado. Configura JAVA_HOME o instala un JDK para ejecutar StockDate.
+        echo No JDK was found. Set JAVA_HOME or install a JDK to run StockDate.
         exit /b 1
     )
 )

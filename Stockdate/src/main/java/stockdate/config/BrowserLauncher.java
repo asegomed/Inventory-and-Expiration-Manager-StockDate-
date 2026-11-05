@@ -21,14 +21,14 @@ public class BrowserLauncher {
     @EventListener(ApplicationReadyEvent.class)
     public void openApplication() {
         if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-            logger.info("Abre StockDate en tu navegador: {}", APPLICATION_URL);
+            logger.info("Open StockDate in your browser: {}", APPLICATION_URL);
             return;
         }
 
         try {
             Desktop.getDesktop().browse(APPLICATION_URL);
         } catch (IOException exception) {
-            logger.warn("No se pudo abrir el navegador. Abre StockDate en: {}", APPLICATION_URL, exception);
+            logger.warn("Could not open the browser. Open StockDate at: {}", APPLICATION_URL, exception);
         }
     }
 }

@@ -1,37 +1,37 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f5f7f2">
-    <title>StockDate | Inventario</title>
+    <title>StockDate | Inventory</title>
     <link rel="stylesheet" href="/css/styles.css">
     <script src="/js/app.js" defer></script>
 </head>
 <body>
 <div class="app-shell">
     <aside class="sidebar">
-        <a class="brand" href="#dashboard" aria-label="StockDate, inicio">
+        <a class="brand" href="#dashboard" aria-label="StockDate home">
             <span class="brand-mark" aria-hidden="true">S</span>
             <span>Stock<span class="brand-light">Date</span></span>
         </a>
 
         <p class="nav-label">MENU</p>
-        <nav class="main-nav" aria-label="Menu principal">
+        <nav class="main-nav" aria-label="Main menu">
             <button class="nav-link active" type="button" data-view="dashboard">
-                <span aria-hidden="true">⌂</span> Resumen
+                <span aria-hidden="true">⌂</span> Dashboard
             </button>
             <button class="nav-link" type="button" data-view="inventory">
-                <span aria-hidden="true">▤</span> Inventario
+                <span aria-hidden="true">▤</span> Inventory
             </button>
             <button class="nav-link" type="button" data-view="register">
-                <span aria-hidden="true">＋</span> Registrar lote
+                <span aria-hidden="true">＋</span> Add batch
             </button>
         </nav>
 
         <div class="sidebar-footer">
             <span class="connection-dot" aria-hidden="true"></span>
-            Aplicacion local
+            Local application
         </div>
     </aside>
 
@@ -41,9 +41,9 @@
                 <span class="brand-mark" aria-hidden="true">S</span>
                 <span>StockDate</span>
             </div>
-            <p class="topbar-note">Control sencillo de alimentos</p>
+            <p class="topbar-note">Simple food inventory management</p>
             <button class="button button-primary topbar-action" type="button" data-open-register>
-                <span aria-hidden="true">＋</span> Nuevo lote
+                <span aria-hidden="true">＋</span> New batch
             </button>
         </header>
 
@@ -53,40 +53,40 @@
             <section id="dashboard-view" class="view">
                 <div class="page-heading">
                     <div>
-                        <p class="eyebrow">PANEL PRINCIPAL</p>
-                        <h1>Resumen del inventario</h1>
-                        <p class="muted">Consulta tus lotes y revisa sus fechas de caducidad.</p>
+                        <p class="eyebrow">DASHBOARD</p>
+                        <h1>Inventory overview</h1>
+                        <p class="muted">View your batches and check their expiration dates.</p>
                     </div>
                     <span id="today-label" class="date-label"></span>
                 </div>
 
-                <div class="summary-grid" aria-label="Resumen de caducidad">
+                <div class="summary-grid" aria-label="Expiration overview">
                     <article class="summary-card">
                         <div class="summary-icon total-icon" aria-hidden="true">▤</div>
-                        <p class="summary-label">Lotes registrados</p>
+                        <p class="summary-label">Registered batches</p>
                         <p id="total-count" class="summary-value">0</p>
                     </article>
                     <article class="summary-card">
                         <div class="summary-icon red-icon" aria-hidden="true">!</div>
-                        <p class="summary-label">Caducan pronto</p>
+                        <p class="summary-label">Expiring soon</p>
                         <p id="red-count" class="summary-value">0</p>
-                        <span class="summary-help">En los proximos 7 dias</span>
+                        <span class="summary-help">Within the next 7 days</span>
                     </article>
                     <article class="summary-card">
                         <div class="summary-icon yellow-icon" aria-hidden="true">◷</div>
-                        <p class="summary-label">Proxima caducidad</p>
+                        <p class="summary-label">Next expiration</p>
                         <p id="next-expiration" class="summary-value summary-date">—</p>
-                        <span id="next-product" class="summary-help">Sin lotes registrados</span>
+                        <span id="next-product" class="summary-help">No batches registered</span>
                     </article>
                 </div>
 
                 <section class="content-card">
                     <div class="card-heading">
                         <div>
-                            <h2>Fechas de caducidad</h2>
-                            <p class="muted">Lotes mas proximos a caducar.</p>
+                            <h2>Expiration dates</h2>
+                            <p class="muted">Batches with the nearest expiration dates.</p>
                         </div>
-                        <button class="text-button" type="button" data-view="inventory">Ver inventario</button>
+                        <button class="text-button" type="button" data-view="inventory">View inventory</button>
                     </div>
                     <div id="dashboard-batches" class="batch-list"></div>
                 </section>
@@ -96,11 +96,11 @@
                 <div class="page-heading">
                     <div>
                         <p class="eyebrow">STOCK</p>
-                        <h1>Inventario</h1>
-                        <p class="muted">Busca y revisa los alimentos registrados.</p>
+                        <h1>Inventory</h1>
+                        <p class="muted">Search and review registered food items.</p>
                     </div>
                     <button class="button button-primary" type="button" data-open-register>
-                        <span aria-hidden="true">＋</span> Nuevo lote
+                        <span aria-hidden="true">＋</span> New batch
                     </button>
                 </div>
 
@@ -108,8 +108,8 @@
                     <div class="inventory-toolbar">
                         <label class="search-box">
                             <span aria-hidden="true">⌕</span>
-                            <span class="sr-only">Buscar producto o categoria</span>
-                            <input id="inventory-search" type="search" placeholder="Buscar producto o categoria">
+                            <span class="sr-only">Search by product or category</span>
+                            <input id="inventory-search" type="search" placeholder="Search by product or category">
                         </label>
                         <span id="inventory-count" class="muted"></span>
                     </div>
@@ -117,12 +117,13 @@
                         <table>
                             <thead>
                             <tr>
-                                <th>Producto</th>
-                                <th>Categoria</th>
-                                <th>Cantidad</th>
-                                <th>Ubicacion</th>
-                                <th>Caducidad</th>
-                                <th>Estado</th>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Storage location</th>
+                                <th>Expiration</th>
+                                <th>Status</th>
+                                <th><span class="sr-only">Actions</span></th>
                             </tr>
                             </thead>
                             <tbody id="inventory-rows"></tbody>
@@ -130,9 +131,9 @@
                     </div>
                     <div id="inventory-empty" class="empty-state" hidden>
                         <span class="empty-icon" aria-hidden="true">▤</span>
-                        <h2 id="inventory-empty-title">Aun no hay lotes</h2>
-                        <p id="inventory-empty-copy">Registra el primer lote para verlo aqui.</p>
-                        <button class="button button-primary" type="button" data-open-register>Registrar lote</button>
+                        <h2 id="inventory-empty-title">No batches yet</h2>
+                        <p id="inventory-empty-copy">Add your first batch to see it here.</p>
+                        <button class="button button-primary" type="button" data-open-register>Add batch</button>
                     </div>
                 </section>
             </section>
@@ -140,9 +141,9 @@
             <section id="register-view" class="view" hidden>
                 <div class="page-heading">
                     <div>
-                        <p class="eyebrow">INVENTARIO</p>
-                        <h1>Registrar un lote</h1>
-                        <p class="muted">Anade un lote de alimentos al inventario.</p>
+                        <p class="eyebrow">INVENTORY</p>
+                        <h1 id="batch-form-title">Add a batch</h1>
+                        <p class="muted">Add a food batch to your inventory.</p>
                     </div>
                 </div>
 
@@ -150,37 +151,37 @@
                     <form id="batch-form">
                         <div class="form-grid">
                             <label class="form-field">
-                                <span>Nombre del producto</span>
-                                <input name="productName" type="text" maxlength="100" placeholder="Ej. Arroz" required>
+                                <span>Product name</span>
+                                <input name="productName" type="text" maxlength="100" placeholder="e.g. Rice" required>
                             </label>
                             <label class="form-field">
-                                <span>Categoria</span>
-                                <input name="category" type="text" maxlength="60" placeholder="Ej. Cereales" required>
+                                <span>Category</span>
+                                <input name="category" type="text" maxlength="60" placeholder="e.g. Grains" required>
                             </label>
                             <label class="form-field">
-                                <span>Cantidad (unidades)</span>
-                                <input name="quantity" type="number" min="1" step="1" placeholder="Ej. 20" required>
+                                <span>Quantity (units)</span>
+                                <input name="quantity" type="number" min="1" step="1" placeholder="e.g. 20" required>
                             </label>
                             <label class="form-field">
-                                <span>Ubicacion</span>
-                                <input name="storageLocation" type="text" maxlength="100" placeholder="Ej. Estanteria A" required>
+                                <span>Storage location</span>
+                                <input name="storageLocation" type="text" maxlength="100" placeholder="e.g. Shelf A" required>
                             </label>
                             <label class="form-field">
-                                <span>Fecha de caducidad</span>
+                                <span>Expiration date</span>
                                 <input id="expiration-date" name="expirationDate" type="date" required>
                             </label>
                             <label class="form-field">
-                                <span>Tipo de fecha</span>
+                                <span>Date type</span>
                                 <select name="expirationDateType" required>
-                                    <option value="USE_BY">Fecha de caducidad</option>
-                                    <option value="BEST_BEFORE">Consumir preferentemente antes de</option>
+                                    <option value="USE_BY">Use by</option>
+                                    <option value="BEST_BEFORE">Best before</option>
                                 </select>
                             </label>
                         </div>
-                        <p class="form-hint">Los campos son obligatorios. La fecha de caducidad no puede estar en el pasado.</p>
+                        <p class="form-hint">All fields are required. The expiration date cannot be in the past.</p>
                         <div class="form-actions">
-                            <button class="button button-secondary" type="button" data-view="inventory">Cancelar</button>
-                            <button class="button button-primary" type="submit">Guardar lote</button>
+                            <button class="button button-secondary" type="button" data-cancel-form>Cancel</button>
+                            <button id="batch-form-submit" class="button button-primary" type="submit">Save batch</button>
                         </div>
                     </form>
                 </section>

@@ -18,7 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "stockdate.browser.open=false"
+        properties = {
+                "stockdate.browser.open=false",
+                "spring.datasource.url=jdbc:sqlite::memory:",
+                "spring.datasource.hikari.maximum-pool-size=1"
+        }
 )
 class InventoryControllerTests {
 
@@ -30,10 +34,10 @@ class InventoryControllerTests {
         String expirationDate = LocalDate.now().plusDays(30).toString();
         String requestBody = """
                 {
-                  "productName": "Arroz",
-                  "category": "Cereales",
+                  "productName": "Rice",
+                  "category": "Grains",
                   "quantity": 10,
-                  "storageLocation": "Estanteria A",
+                  "storageLocation": "Shelf A",
                   "expirationDate": "%s",
                   "expirationDateType": "BEST_BEFORE"
                 }
@@ -42,22 +46,22 @@ class InventoryControllerTests {
         HttpResponse<String> created = send(requestBody);
 
         assertEquals(201, created.statusCode());
-        assertTrue(created.body().contains("\"productName\":\"Arroz\""));
+        assertTrue(created.body().contains("\"productName\":\"Rice\""));
 
         HttpResponse<String> inventory = send(null);
 
         assertEquals(200, inventory.statusCode());
-        assertTrue(inventory.body().contains("\"productName\":\"Arroz\""));
+        assertTrue(inventory.body().contains("\"productName\":\"Rice\""));
     }
 
     @Test
     void returnsBadRequestForInvalidBatch() throws IOException, InterruptedException {
         String requestBody = """
                 {
-                  "productName": "Arroz",
-                  "category": "Cereales",
+                  "productName": "Rice",
+                  "category": "Grains",
                   "quantity": 0,
-                  "storageLocation": "Estanteria A",
+                  "storageLocation": "Shelf A",
                   "expirationDate": "%s",
                   "expirationDateType": "%s"
                 }
@@ -69,18 +73,70 @@ class InventoryControllerTests {
         HttpResponse<String> response = send(requestBody);
 
         assertEquals(400, response.statusCode());
-        assertTrue(response.body().contains("La cantidad debe ser mayor que cero."));
+        assertTrue(response.body().contains("Quantity must be greater than zero."));
+    }
+
+    @Test
+    void updatesAndReturnsExistingBatch() throws IOException, InterruptedException {
+        String createBody = batchJson("Rice", "Grains", 10, "Shelf A",
+                LocalDate.now().plusDays(30), "BEST_BEFORE");
+        HttpResponse<String> created = send(createBody);
+        assertEquals(201, created.statusCode());
+        long id = Long.parseLong(created.body().replaceFirst(".*\"id\":(\\d+).*", "$1"));
+
+        String updateBody = batchJson("Brown rice", "Grains", 15, "Shelf B",
+                LocalDate.now().plusDays(45), "BEST_BEFORE");
+        HttpResponse<String> updated = send("PUT", "/api/inventory/" + id, updateBody);
+
+        assertEquals(200, updated.statusCode());
+        assertTrue(updated.body().contains("\"productName\":\"Brown rice\""));
+        assertTrue(updated.body().contains("\"quantity\":15"));
+        assertTrue(send(null).body().contains("\"productName\":\"Brown rice\""));
+    }
+
+    @Test
+    void returnsNotFoundWhenUpdatingMissingBatch() throws IOException, InterruptedException {
+        String updateBody = batchJson("Rice", "Grains", 5, "Shelf A",
+                LocalDate.now().plusDays(30), "BEST_BEFORE");
+
+        HttpResponse<String> response = send("PUT", "/api/inventory/999999", updateBody);
+
+        assertEquals(404, response.statusCode());
+        assertTrue(response.body().contains("Batch not found."));
     }
 
     private HttpResponse<String> send(String body) throws IOException, InterruptedException {
+        return send(body == null ? "GET" : "POST", "/api/inventory", body);
+    }
+
+    private HttpResponse<String> send(String method, String path, String body)
+            throws IOException, InterruptedException {
         HttpRequest.Builder request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:" + port + "/api/inventory"));
+                .uri(URI.create("http://localhost:" + port + path));
         if (body == null) {
             request.GET();
         } else {
-            request.header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body));
+            request.header("Content-Type", "application/json");
+            if ("PUT".equals(method)) {
+                request.PUT(HttpRequest.BodyPublishers.ofString(body));
+            } else {
+                request.POST(HttpRequest.BodyPublishers.ofString(body));
+            }
         }
         return HttpClient.newHttpClient().send(request.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private String batchJson(String productName, String category, int quantity,
+                             String location, LocalDate expirationDate, String dateType) {
+        return """
+                {
+                  "productName": "%s",
+                  "category": "%s",
+                  "quantity": %d,
+                  "storageLocation": "%s",
+                  "expirationDate": "%s",
+                  "expirationDateType": "%s"
+                }
+                """.formatted(productName, category, quantity, location, expirationDate, dateType);
     }
 }
