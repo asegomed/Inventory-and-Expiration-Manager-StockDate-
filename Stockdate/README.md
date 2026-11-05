@@ -167,7 +167,10 @@ Stockdate/
 - `Information/`: PDF y presentacion usados como referencia de requisitos y
   arquitectura.
 - `.gradle/` y `build/`: datos locales y resultados generados por Gradle; no
-  forman parte del codigo fuente de la aplicacion.
+  forman parte del codigo fuente de la aplicacion. En Windows, los resultados
+  se guardan bajo `%LOCALAPPDATA%\Stockdate\<nombre-del-proyecto>\build` para
+  evitar bloqueos de sincronizacion en carpetas como OneDrive; en otros
+  sistemas se usa `build/` dentro del proyecto.
 
 ## Ejecutar las pruebas
 
