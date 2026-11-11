@@ -1,4 +1,13 @@
 package stockdate.presentation.dto.response;
 
-public class DashboardDTO { // To do: for dashboard data
+import java.util.List;
+
+// Dashboard summary: number of batches per tier and the batches that need attention (Expired and Red).
+public record DashboardDTO(
+        int expiredCount,
+        int redCount,
+        int yellowCount,
+        int greenCount,
+        List<BatchDTO> pinnedBatches
+) {
 }

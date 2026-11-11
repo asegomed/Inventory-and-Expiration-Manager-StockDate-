@@ -6,7 +6,7 @@ data is stored in the local SQLite database `stockdate.db`.
 
 ## Requirements
 
-- JDK 17 or later.
+- JDK 17 or later (Gradle itself also needs Java 17+ to run).
 - Gradle is provided by the included Wrapper.
 - Internet access may be required on first launch to download Gradle and
   project dependencies.
@@ -25,15 +25,26 @@ The application starts at `http://localhost:8080` and attempts to open the
 address in the default browser. If it does not open automatically, navigate
 there manually. Stop the application with `Ctrl+C`.
 
-To run the Gradle verification task:
+## Build, tests and code quality
 
 ```text
-Windows:     gradlew.bat test
-macOS/Linux: sh gradlew test
+Windows:     gradlew.bat build
+macOS/Linux: ./gradlew build
 ```
 
-There are currently no test source files under `src/test`, so Gradle reports
-`NO-SOURCE` for the test task until tests are added.
+`build` compiles the code, runs the tests, Checkstyle and PMD, and generates
+the JaCoCo coverage report. To run only the tests use `gradlew test`.
+
+| Tool | Configuration | Report (Windows) |
+|---|---|---|
+| JUnit 5 + Mockito | `src/test/java/stockdate/` | `build/reports/tests/test/index.html` |
+| JaCoCo | `build.gradle` (runs after `test`) | `build/reports/jacoco/test/html/index.html` |
+| Checkstyle | `config/checkstyle/checkstyle.xml` | `build/reports/checkstyle/main.html` |
+| PMD | `config/pmd/ruleset.xml` | `build/reports/pmd/main.html` |
+
+On Windows the `build/` folder is placed under
+`%LOCALAPPDATA%\Stockdate\Stockdate\build`; elsewhere Gradle uses its normal
+`build/` directory.
 
 ## Pages
 
@@ -43,86 +54,95 @@ There are currently no test source files under `src/test`, so Gradle reports
   Use the **Main menu** button to return to the dashboard.
 - `/index.html`: redirects to `/main.html`.
 
-The product page and dashboard use the same inventory API:
+## REST API
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| `GET` | `/api/inventory` | List batches, ordered by expiration date |
+| `GET` | `/api/inventory` | List batches, ordered by expiration date (FEFO) |
 | `POST` | `/api/inventory` | Register a batch |
 | `PUT` | `/api/inventory/{id}` | Update an existing batch |
+| `GET` | `/api/dashboard` | Dashboard summary: count per tier and pinned batches (Expired and Red) |
+| `GET` | `/actuator/health` | Application health check |
 
 Invalid batch data returns HTTP 400; updating a missing batch returns HTTP
-404. The UI validates required fields, positive quantity, and past `USE_BY`
-dates. Expiration statuses are calculated as `EXPIRED`, `RED`, `YELLOW`, or
-`GREEN`.
+404. Every batch is returned with `daysUntilExpiration`, a `status`
+(`EXPIRED`, `RED`, `YELLOW` or `GREEN`) and `dispatchable` (`false` for a
+use-by batch that has already expired).
+
+The tier thresholds are configured in `application.properties`:
+
+```properties
+stockdate.alert.red-days=7
+stockdate.alert.yellow-days=14
+```
 
 ## Architecture
 
-The Java sources are directly under `src/main/stockdate/`, matching their
-declared package names (for example `package stockdate.service`). Gradle is
-configured to use `src/main` as its Java source root:
-
-- `presentation/controller/` receives HTTP requests and delegates to services.
-- `presentation/dto/` defines request and response data structures.
-- `service/` contains inventory validation and expiration-status logic.
-- `persistence/entity/` maps Java objects to database tables.
-- `persistence/repository/` provides Spring Data JPA database operations.
-- `persistence/converter/` maps SQLite ISO date text to and from `LocalDate`.
-- `config/` contains application support such as browser startup.
-
-The source layout is:
+The application follows a layered architecture. Java sources are in
+`src/main/java/stockdate/` and tests in `src/test/java/stockdate/`:
 
 ```text
 src/main/
-├── stockdate/                    # Java sources; package root is `stockdate`
-│   ├── config/
+├── java/stockdate/
+│   ├── config/                   # Security, browser launcher
 │   ├── persistence/
-│   │   ├── converter/
-│   │   ├── entity/
-│   │   └── repository/
+│   │   ├── converter/            # LocalDate <-> ISO text for SQLite
+│   │   ├── entity/               # JPA entities (tables)
+│   │   └── repository/           # Spring Data JPA repositories
 │   ├── presentation/
-│   │   ├── controller/
-│   │   └── dto/
-│   └── service/
-└── resources/                    # The only other direct folder in main/
-    ├── static/
-    │   ├── css/
-    │   ├── js/
-    │   ├── index.html
-    │   ├── main.html
-    │   └── productos.html
+│   │   ├── controller/           # REST controllers and error handler
+│   │   └── dto/                  # Request and response objects
+│   └── service/                  # Business logic
+│       ├── factory/              # Factory pattern
+│       ├── observer/             # Observer pattern
+│       └── strategy/             # Strategy pattern
+└── resources/
+    ├── static/                   # HTML, CSS and JavaScript
     ├── application.properties
     └── schema.sql
 ```
 
-There is no `src/main/java/` directory. Gradle uses `src/main` as the Java
-source root so `stockdate/` is directly beside `resources/`.
+- `presentation/controller/` receives HTTP requests and delegates to services.
+  It only exchanges DTOs, never entities.
+- `service/` contains the business rules (validation, expiration status,
+  dashboard summary).
+- `persistence/` maps Java objects to the SQLite database through Spring Data
+  JPA. `schema.sql` creates the tables; Hibernate schema generation is
+  disabled (`ddl-auto=none`).
+- `config/SecurityConfig.java` adds Spring Security with every route open for
+  now, and provides the BCrypt `PasswordEncoder` for the future login.
 
-`InventoryManager` depends on `InventoryRepository` rather than containing
-SQL. `BatchEntity` maps the existing `batch` table. The date converter is
-necessary because SQLite stores `expiration_date` as `YYYY-MM-DD` text.
-`schema.sql` creates the table when it is absent; Hibernate schema generation
-is disabled to preserve the existing database schema.
+## Design patterns
 
-The web assets are in `src/main/resources/static/`: `main.html` is the
-dashboard, `productos.html` is the product-management page, `css/styles.css`
-contains shared styling, and `js/main.js` / `js/app.js` implement the respective
-page behavior.
+| Pattern | Files | Role |
+|---|---|---|
+| **Observer** | `service/observer/Observer.java`, `InventoryManager` (subject), `ExpirationAlertService` (observer) | After a batch is saved, `InventoryManager` notifies its observers. `ExpirationAlertService` invalidates its cached dashboard asynchronously (`@Async`); the summary is also rebuilt when the date changes. |
+| **Strategy** | `service/strategy/Strategy.java`, `UseByStrategy`, `BestBeforeStrategy` | Rules that depend on the date type: whether a past date is accepted and whether an expired batch can be dispatched. |
+| **Factory** | `service/factory/Factory.java` | Single place that selects the strategy for a date type and creates `BatchEntity` and `BatchDTO` objects (days left, tier and `dispatchable`). |
 
-## Authentication and planned features
+Each pattern has its own unit tests (`ObserverTests`, `StrategyTests`,
+`FactoryTests`) that run without a database.
 
-Login and role-based permissions are not implemented. Spring Security is not
-included, so there is no framework-generated login prompt. User management,
-batch deletion, dispatch/discard workflows, expiration-alert services, and
-reports remain future work.
+## Current status
 
-## Build and local data
+Implemented:
 
-`build.gradle` configures Java 17, Spring Boot, Spring Data JPA, SQLite,
-validation, Actuator, and the JaCoCo, PMD, and Checkstyle plugins. On Windows,
-Gradle build output is stored under
-`%LOCALAPPDATA%\Stockdate\Stockdate\build`; elsewhere Gradle uses its normal
-build directory.
+- Batch registration, editing and listing (UC-02, partly UC-03).
+- Dashboard summary endpoint with cache (partly UC-05).
+- Observer, Strategy and Factory design patterns.
+- Build with tests, JaCoCo, Checkstyle and PMD.
+
+Not implemented yet:
+
+- Login, roles and user management (UC-01, UC-08). Spring Security is
+  included but every route is open.
+- Dispatch with FEFO (UC-04), discards (UC-06) and monthly reports (UC-07).
+- Normalized database schema: only the `batch` table exists; `users`,
+  `categories` and `stock_movements` are still to be created.
+- The frontend still calculates the dashboard itself instead of calling
+  `/api/dashboard`.
+
+## Local data
 
 The SQLite database is `stockdate.db` in this project directory. Keep it when
 backing up or moving the application if its inventory data should be retained.

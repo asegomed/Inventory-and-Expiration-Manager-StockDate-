@@ -1,39 +1,43 @@
 package stockdate.service;
 
-import stockdate.ExpirationDateType;
+import org.springframework.stereotype.Service;
 import stockdate.persistence.entity.BatchEntity;
 import stockdate.persistence.repository.InventoryRepository;
 import stockdate.presentation.dto.request.CreateBatchRequest;
 import stockdate.presentation.dto.response.BatchDTO;
-import org.springframework.stereotype.Service;
+import stockdate.service.factory.Factory;
+import stockdate.service.observer.Observer;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
-import static stockdate.presentation.dto.response.BatchDTO.ExpirationStatus;
-
-// For validating and managing inventory batches in the database
+// Validates and manages inventory batches. Subject of the Observer pattern: notifies stock changes.
 @Service
 public class InventoryManager {
 
     private final InventoryRepository inventoryRepository;
+    private final Factory factory;
+    private final List<Observer> observers;
 
-    public InventoryManager(InventoryRepository inventoryRepository) {
+    public InventoryManager(InventoryRepository inventoryRepository, Factory factory, List<Observer> observers) {
         this.inventoryRepository = inventoryRepository;
+        this.factory = factory;
+        this.observers = List.copyOf(observers);
     }
 
     public List<BatchDTO> getBatches() {
+        LocalDate today = LocalDate.now();
         return inventoryRepository.findAllByOrderByExpirationDateAscIdAsc().stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+                .map(batch -> factory.createBatchDto(batch, today))
+                .toList();
     }
 
     public BatchDTO registerBatch(CreateBatchRequest request) {
         validateBatch(request);
-        return toDto(inventoryRepository.save(toEntity(request)));
+        BatchEntity saved = inventoryRepository.save(factory.createBatch(request));
+        notifyObservers();
+        return factory.createBatchDto(saved, LocalDate.now());
     }
 
     public BatchDTO updateBatch(long id, CreateBatchRequest request) {
@@ -41,9 +45,17 @@ public class InventoryManager {
 
         BatchEntity batch = inventoryRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Batch not found."));
-        batch.update(trim(request.productName()), trim(request.category()), request.quantity(),
-                trim(request.storageLocation()), request.expirationDate(), request.expirationDateType());
-        return toDto(inventoryRepository.save(batch));
+        batch.update(request.productName().trim(), request.category().trim(), request.quantity(),
+                request.storageLocation().trim(), request.expirationDate(), request.expirationDateType());
+        BatchEntity saved = inventoryRepository.save(batch);
+        notifyObservers();
+        return factory.createBatchDto(saved, LocalDate.now());
+    }
+
+    private void notifyObservers() {
+        for (Observer observer : observers) {
+            observer.onStockChanged();
+        }
     }
 
     private void validateBatch(CreateBatchRequest request) {
@@ -65,38 +77,7 @@ public class InventoryManager {
         if (request.expirationDate() == null || request.expirationDateType() == null) {
             throw new IllegalArgumentException("Date and date type are required.");
         }
-        if (request.expirationDateType() == ExpirationDateType.USE_BY
-                && request.expirationDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("The expiration date cannot be in the past.");
-        }
-    }
-
-    private BatchEntity toEntity(CreateBatchRequest request) {
-        return new BatchEntity(trim(request.productName()), trim(request.category()), request.quantity(),
-                trim(request.storageLocation()), request.expirationDate(), request.expirationDateType());
-    }
-
-    private BatchDTO toDto(BatchEntity batch) {
-        long days = ChronoUnit.DAYS.between(LocalDate.now(), batch.getExpirationDate());
-        return new BatchDTO(batch.getId(), batch.getProductName(), batch.getCategory(), batch.getQuantity(),
-                batch.getStorageLocation(), batch.getExpirationDate(), batch.getExpirationDateType(),
-                days, getExpirationStatus(days));
-    }
-
-    private String trim(String value) {
-        return value.trim();
-    }
-
-    private ExpirationStatus getExpirationStatus(long daysUntilExpiration) {
-        if (daysUntilExpiration < 0) {
-            return ExpirationStatus.EXPIRED;
-        }
-        if (daysUntilExpiration <= 7) {
-            return ExpirationStatus.RED;
-        }
-        if (daysUntilExpiration <= 14) {
-            return ExpirationStatus.YELLOW;
-        }
-        return ExpirationStatus.GREEN;
+        factory.createStrategy(request.expirationDateType())
+                .validateExpirationDate(request.expirationDate(), LocalDate.now());
     }
 }

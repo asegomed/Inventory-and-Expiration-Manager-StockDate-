@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 // DTO class for representing batch information in the response (what user sees in the web)
 public record BatchDTO(
-        long id,
+        Long id,
         String productName,
         String category,
         int quantity,
@@ -14,7 +14,8 @@ public record BatchDTO(
         LocalDate expirationDate,
         ExpirationDateType expirationDateType,
         long daysUntilExpiration,
-        ExpirationStatus status
+        ExpirationStatus status,
+        boolean dispatchable
 ) {
     public enum ExpirationStatus {
         EXPIRED,

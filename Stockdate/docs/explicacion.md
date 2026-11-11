@@ -9,18 +9,17 @@ source code, and is not required for the application to run.
 ```text
 Stockdate/
 ├── .gradle/                              # Local Gradle state and caches
-├── .idea/                                # Local IntelliJ IDEA settings
-├── build/                                # Previous/generated build output
+├── build/                                # Generated build output (not on Windows, see below)
+├── config/
+│   ├── checkstyle/checkstyle.xml         # Checkstyle rules
+│   └── pmd/ruleset.xml                   # PMD rules
 ├── docs/
 │   └── explicacion.md                    # This project structure guide
 ├── gradle/wrapper/                       # Gradle Wrapper files
-├── start.bat                              # Windows application launcher
-├── start.sh                               # macOS/Linux application launcher
-├── run.bat                                # Windows launcher implementation
-├── Information/                          # Project reference documents
+├── Information/                          # Project reference documents (Phase 1 PDF)
 ├── src/
 │   ├── main/
-│   │   ├── stockdate/                    # Java package root
+│   │   ├── java/stockdate/               # Java package root
 │   │   │   ├── config/
 │   │   │   ├── persistence/
 │   │   │   │   ├── converter/
@@ -29,11 +28,14 @@ Stockdate/
 │   │   │   ├── presentation/
 │   │   │   │   ├── controller/
 │   │   │   │   ├── dto/request/
-│   │   │   │   ├── dto/response/
+│   │   │   │   └── dto/response/
 │   │   │   ├── service/
+│   │   │   │   ├── factory/              # Factory pattern
+│   │   │   │   ├── observer/             # Observer pattern
+│   │   │   │   └── strategy/             # Strategy pattern
 │   │   │   ├── ExpirationDateType.java
 │   │   │   └── StockdateApplication.java
-│   │   └── resources/                    # Only other direct folder in main/
+│   │   └── resources/
 │   │       ├── static/
 │   │       │   ├── css/
 │   │       │   ├── js/
@@ -42,32 +44,34 @@ Stockdate/
 │   │       │   └── productos.html
 │   │       ├── application.properties
 │   │       └── schema.sql
-│   └── test/                              # No test sources currently
+│   └── test/java/stockdate/              # JUnit 5 and Mockito tests
 ├── .gitattributes
 ├── .gitignore
 ├── build.gradle
 ├── gradlew
 ├── gradlew.bat
 ├── README.md
-├── run.bat
+├── run.bat                               # Windows launcher implementation
 ├── settings.gradle
-├── stockdate.db                         # Local SQLite database, if present
-└── Stockdate.iml
+├── start.bat                             # Windows application launcher
+├── start.sh                              # macOS/Linux application launcher
+└── stockdate.db                          # Local SQLite database, if present
 ```
 
 ## Application source: `src/main`
 
-### Java source: `src/main/stockdate`
+### Java source: `src/main/java/stockdate`
 
-Gradle's `main` Java source set uses `src/main` as its source root. This keeps
-the Java package folder (`stockdate/`) directly beside `resources/`, as
-required by this project's source layout. There is no `src/main/java/`
-directory; `src/main/` contains only `stockdate/` and `resources/`.
+The project uses the standard Gradle/Maven layout: Java sources in
+`src/main/java`, resources in `src/main/resources` and tests in
+`src/test/java`. Each folder matches its declared package (for example
+`src/main/java/stockdate/service/` is `package stockdate.service`).
 
 - `StockdateApplication.java`: application entry point; starts Spring Boot and
-  its web server.
-- `ExpirationDateType.java`: defines supported date types, including `USE_BY`
-  and `BEST_BEFORE`.
+  its web server. `@EnableAsync` enables asynchronous methods (used by the
+  Observer notification).
+- `ExpirationDateType.java`: defines supported date types, `USE_BY` and
+  `BEST_BEFORE`.
 
 #### `config/`
 
@@ -75,19 +79,23 @@ Contains application support components:
 
 - `BrowserLauncher.java`: attempts to open `http://localhost:8080` in the
   default browser once the server has started.
+- `SecurityConfig.java`: Spring Security configuration. For now every route is
+  open and CSRF is disabled, so the application works as before until login
+  (UC-01) and roles are implemented. It already provides the BCrypt
+  `PasswordEncoder` that user management will use.
 - SQLite's Hibernate dialect and datasource settings are configured in
   `application.properties`; there is no separate dialect configuration class.
-- Spring Security and its generated login page are not included. Authentication
-  and roles are future work.
 
 #### `presentation/`
 
 Contains the HTTP API layer that communicates with the frontend and other
-clients:
+clients. It only exchanges DTOs, never entities:
 
 - `controller/`: handles HTTP requests and responses.
-  - `InventoryController.java`: exposes batch listing (`GET`), creation
-    (`POST`), and updates (`PUT /api/inventory/{id}`).
+  - `InventoryController.java`: exposes batch listing
+    (`GET /api/inventory`), creation (`POST /api/inventory`), updates
+    (`PUT /api/inventory/{id}`) and the dashboard summary
+    (`GET /api/dashboard`, delegated to `ExpirationAlertService`).
   - `ApiExceptionHandler.java`: converts invalid-request exceptions to HTTP
     400 responses and missing-batch exceptions to HTTP 404 responses.
   - `AdminController.java`, `AuthController.java`, and `ReportController.java`:
@@ -101,27 +109,45 @@ clients:
     - `DispatchRequest.java`: placeholder for an inventory dispatch request.
   - `response/`: data returned to clients.
     - `ApiError.java`: error response structure.
-    - `BatchDTO.java`: batch data, including its expiration status.
-    - `DashboardDTO.java`: placeholder for dashboard response data.
+    - `BatchDTO.java`: batch data, including days until expiration, status
+      tier (`EXPIRED`, `RED`, `YELLOW`, `GREEN`) and `dispatchable`.
+    - `DashboardDTO.java`: dashboard summary with the count per tier and the
+      pinned batches (Expired and Red).
     - `ReportDTO.java`: placeholder for report response data.
     - `UserDTO.java`: placeholder for user response data.
+
 #### `service/`
 
-Contains application and inventory rules:
+Contains the business rules:
 
-- `InventoryManager.java`: validates batches, uses `InventoryRepository` to
-  persist them, and calculates the time remaining until expiration and the
-  batch status.
-- `ExpirationAlertService.java`: placeholder for future expiration alerts.
+- `InventoryManager.java`: validates batches, saves them through
+  `InventoryRepository` and notifies its observers after each change. It is
+  the subject of the Observer pattern.
+- `ExpirationAlertService.java`: builds the dashboard summary and keeps it in a
+  cache. It is the observer of the Observer pattern: a stock change or a new
+  day invalidates the cache.
+- `observer/Observer.java`: **Observer pattern** interface
+  (`onStockChanged()`).
+- `strategy/`: **Strategy pattern**, rules that depend on the date type.
+  - `Strategy.java`: interface with `validateExpirationDate()` and
+    `canBeDispatched()`.
+  - `UseByStrategy.java`: a use-by date cannot be in the past and an expired
+    batch cannot be dispatched.
+  - `BestBeforeStrategy.java`: past dates are accepted and the batch can still
+    be dispatched.
+- `factory/Factory.java`: **Factory pattern**, selects the strategy for a date
+  type and creates `BatchEntity` and `BatchDTO` objects. It reads the tier
+  thresholds (`stockdate.alert.red-days`, `stockdate.alert.yellow-days`) from
+  `application.properties`.
 - `ReportService.java`: placeholder for future report generation.
 - `UserService.java`: placeholder for future user management.
 
 #### `persistence/`
 
-Groups database-related classes. Inventory persistence uses Spring Data JPA
-with the SQLite database and the SQL schema.
+Groups database-related classes. Persistence uses Spring Data JPA with the
+SQLite database and the SQL schema.
 
-- `entity/`: planned data models.
+- `entity/`: data models.
   - `BatchEntity.java`: JPA entity mapped to the existing `batch` table.
   - `CategoryEntity.java`: planned category model.
   - `StockMovementEntity.java`: planned inventory movement model.
@@ -137,23 +163,36 @@ with the SQLite database and the SQL schema.
 ### Web interface and resources: `src/main/resources`
 
 - `application.properties`: Spring Boot settings, including the application
-  name, automatic browser launch, and SQLite connection.
+  name, automatic browser launch, SQLite connection, Hibernate dialect and the
+  expiration tier thresholds.
 - `schema.sql`: creates the SQLite `batch` table if it does not already exist.
+  Hibernate schema generation is disabled (`ddl-auto=none`).
 - `static/`: frontend files served by Spring Boot.
   - `index.html`: redirects the application root to the dashboard.
   - `main.html`: home dashboard with inventory and expiration summaries.
   - `productos.html`: searchable product list and batch add/edit form, with a
     **Main menu** link back to the dashboard.
   - `css/styles.css`: shared layout, colors, and responsive styles.
-  - `js/main.js`: loads the dashboard data from the inventory API.
+  - `js/main.js`: loads the dashboard data from the inventory API. It still
+    calculates the summary itself instead of calling `/api/dashboard`.
   - `js/app.js`: loads/searches products and handles batch creation and editing
     through the same inventory API.
 
-## Tests: `src/test`
+## Tests: `src/test/java/stockdate`
 
-There are currently no test source files in this directory. The Gradle `test`
-task is configured to use JUnit Platform, but reports `NO-SOURCE` until tests
-are added.
+Tests use JUnit 5 and Mockito. JaCoCo measures their coverage after every
+`gradlew test`.
+
+- `StockdateApplicationTests.java`: checks that the Spring context starts.
+- `presentation/controller/InventoryControllerTests.java`: HTTP tests for the
+  inventory and dashboard endpoints (in-memory SQLite).
+- `service/InventoryManagerTests.java`: batch registration, listing, update and
+  validation (in-memory SQLite).
+- `service/ObserverTests.java`: the subject notifies every observer, and the
+  dashboard cache is invalidated on stock or date changes (mocked repository).
+- `service/strategy/StrategyTests.java`: use-by and best-before rules.
+- `service/factory/FactoryTests.java`: strategy selection, entity creation and
+  tier classification.
 
 ## Build tools, documentation, and root files
 
@@ -167,18 +206,22 @@ are added.
 - `run.bat`: finds an available JDK on Windows and starts the application with
   Gradle.
 - `build.gradle`: defines plugins, dependencies, Java compatibility, and build
-  tasks. On Windows, it writes build output to
+  tasks. Main dependencies: Spring Web, Spring Data JPA, Validation, Actuator,
+  Spring Security, SQLite JDBC and the Hibernate community dialects. It also
+  configures JaCoCo, Checkstyle and PMD. On Windows, it writes build output to
   `%LOCALAPPDATA%\Stockdate\Stockdate\build` to avoid synchronization issues
   in locations such as OneDrive.
+- `config/checkstyle/checkstyle.xml`: Checkstyle code style rules (naming,
+  imports, braces, line length).
+- `config/pmd/ruleset.xml`: PMD rules (best practices, error-prone code,
+  multithreading and security).
 - `settings.gradle`: sets the Gradle project name.
 - `.gitignore`: lists local and generated files that should be excluded from
   Git.
 - `.gitattributes`: defines how Git handles file attributes.
-- `README.md`: the project guide, including requirements and run
-  instructions.
+- `README.md`: the project guide, including requirements, run instructions,
+  API and design patterns.
 - `docs/explicacion.md`: this detailed project-structure guide.
-- `Stockdate.iml`: local IntelliJ IDEA module settings; not needed to run the
-  application with the Gradle Wrapper.
 - `Information/`: project reference documents.
 - `stockdate.db`: SQLite inventory data created at runtime, if present. Keep
   it to retain the current database contents.
@@ -186,12 +229,13 @@ are added.
 ## Local and generated folders
 
 - `.gradle/`: local Gradle caches and state; Gradle can regenerate them.
-- `.idea/`: IDE settings that may differ between developers.
-- `build/`: generated output from earlier builds. It is not source code and
-  can be regenerated. On Windows, new build output is stored under the local
-  application data directory described above.
+- `.idea/` and `*.iml`: IntelliJ IDEA settings that may differ between
+  developers; they are ignored by Git.
+- `build/`: generated output (compiled classes, test, coverage and analysis
+  reports). It is not source code and can be regenerated. On Windows, build
+  output is stored under the local application data directory described above.
 
 These folders are not required when sharing the source code. Include `src/`,
-`gradle/wrapper/`, the Gradle configuration files, and the launcher scripts.
-A JDK 17 or later is required, and Gradle may need internet access on the first
-run to download dependencies.
+`config/`, `gradle/wrapper/`, the Gradle configuration files, and the launcher
+scripts. A JDK 17 or later is required, and Gradle may need internet access on
+the first run to download dependencies.
