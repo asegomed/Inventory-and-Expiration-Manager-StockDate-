@@ -1,30 +1,64 @@
 # StockDate: Inventory and Expiration Manager
 
-**StockDate** is a web application designed to solve a critical problem: the inefficient management of inventory and expiration dates in small businesses and local food banks. Its main objective is to drastically reduce food waste and optimize the time of volunteers and coordinators.
+StockDate is a web application for tracking food inventory batches and their
+expiration dates. The current MVP provides a dashboard and a product page for
+viewing, searching, adding, and editing batches stored in a local SQLite
+database.
 
----
+## Current status
 
-## Team Members
-* **Hugo Cobo Diaz Guerra**
-* **Ángel Luis Segovia Medina**
-* **Francisco Ingelmo**
-* **Enrique Barrera Ruperez**
+Implemented: dashboard summaries, batch listing and search, batch creation and
+editing, expiration status calculation, and persistence through Spring Data
+JPA.
 
----
+Not implemented yet: login and role permissions, batch deletion, stock
+dispatch/discard workflows, expiration-alert services, and reports. The
+application currently has no login prompt.
 
-## What are we developing? (Project Scope & Introduction)
-Currently, the project is in its initial planning and MVP (Minimum Viable Product) development phase. What we are going to build includes:
-* **CRUD System:** Complete management of creation, reading, update, and deletion of inventory batches.
-* **Control Panel (Dashboard):** Automatic visual alerts to identify products nearing their expiration date at a glance.
-* **Waste Reports:** Generation of analytical reports to optimize purchasing or donation decisions and minimize waste.
-* **Role-Based Access Control:** Customized views depending on the user profile (worker or client/beneficiary).
+## Technology
 
----
+- Java 17+ and Spring Boot
+- HTML, CSS, and JavaScript
+- SQLite through Spring Data JPA and Hibernate
+- Gradle Wrapper
 
-## Technical Stack & Current Setup
-* **Backend:** Java using the **Spring Boot** framework.
-* **Frontend:** HTML, CSS, and JavaScript.
-* **Database:** SQLite.
-* **Development Environment (IDE):** IntelliJ IDEA.
-* **Infrastructure & Deployment:** Containerization using **Docker**.
-* **Version Control & Management:** Git and GitHub Projects.
+## Run
+
+From `Stockdate/` run `start.bat` on Windows or `./start.sh` on macOS/Linux.
+The application is served at `http://localhost:8080`. See
+[`Stockdate/README.md`](Stockdate/README.md) for detailed operating
+instructions, API endpoints, and project structure. The explanation of the
+Java layers and folders is in
+[`Stockdate/docs/explicacion.md`](Stockdate/docs/explicacion.md).
+
+## Project layout
+
+```text
+StockDate/
+├── Esquemas_Phase1/             # Planning and reference material
+├── Stockdate/
+│   ├── docs/                    # Project documentation
+│   ├── src/
+│   │   └── main/
+│   │       ├── stockdate/       # Java packages (package root: stockdate)
+│   │       │   ├── config/
+│   │       │   ├── persistence/
+│   │       │   ├── presentation/
+│   │       │   └── service/
+│   │       └── resources/       # Configuration, schema, and web assets
+│   │           └── static/      # HTML, CSS, and JavaScript pages
+│   ├── build.gradle
+│   ├── start.bat / start.sh
+│   └── stockdate.db             # Local inventory database
+└── README.md
+```
+
+`src/main/` contains exactly two directories: `stockdate/` for Java code and
+`resources/` for application configuration and frontend assets.
+
+## Team
+
+- Hugo Cobo Diaz Guerra
+- Ángel Luis Segovia Medina
+- Francisco Ingelmo
+- Enrique Barrera Ruperez
