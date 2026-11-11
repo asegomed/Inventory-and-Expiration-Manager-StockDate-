@@ -20,7 +20,7 @@ Stockdate/
 ├── Information/                          # Project reference documents
 ├── src/
 │   ├── main/
-│   │   ├── java/com/example/stockdate/
+│   │   ├── stockdate/                    # Java package root
 │   │   │   ├── config/
 │   │   │   ├── persistence/
 │   │   │   │   ├── converter/
@@ -33,7 +33,7 @@ Stockdate/
 │   │   │   ├── service/
 │   │   │   ├── ExpirationDateType.java
 │   │   │   └── StockdateApplication.java
-│   │   └── resources/
+│   │   └── resources/                    # Only other direct folder in main/
 │   │       ├── static/
 │   │       │   ├── css/
 │   │       │   ├── js/
@@ -57,7 +57,12 @@ Stockdate/
 
 ## Application source: `src/main`
 
-### Java source: `src/main/java/com/example/stockdate`
+### Java source: `src/main/stockdate`
+
+Gradle's `main` Java source set uses `src/main` as its source root. This keeps
+the Java package folder (`stockdate/`) directly beside `resources/`, as
+required by this project's source layout. There is no `src/main/java/`
+directory; `src/main/` contains only `stockdate/` and `resources/`.
 
 - `StockdateApplication.java`: application entry point; starts Spring Boot and
   its web server.

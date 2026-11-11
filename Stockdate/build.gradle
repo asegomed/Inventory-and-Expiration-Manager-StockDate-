@@ -21,6 +21,14 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main']
+        }
+    }
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.release = 17
 }

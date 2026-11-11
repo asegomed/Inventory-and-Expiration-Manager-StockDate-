@@ -58,8 +58,9 @@ dates. Expiration statuses are calculated as `EXPIRED`, `RED`, `YELLOW`, or
 
 ## Architecture
 
-The Java sources are under `src/main/java/com/example/stockdate/`, matching
-their declared package names:
+The Java sources are directly under `src/main/stockdate/`, matching their
+declared package names (for example `package stockdate.service`). Gradle is
+configured to use `src/main` as its Java source root:
 
 - `presentation/controller/` receives HTTP requests and delegates to services.
 - `presentation/dto/` defines request and response data structures.
@@ -68,6 +69,34 @@ their declared package names:
 - `persistence/repository/` provides Spring Data JPA database operations.
 - `persistence/converter/` maps SQLite ISO date text to and from `LocalDate`.
 - `config/` contains application support such as browser startup.
+
+The source layout is:
+
+```text
+src/main/
+├── stockdate/                    # Java sources; package root is `stockdate`
+│   ├── config/
+│   ├── persistence/
+│   │   ├── converter/
+│   │   ├── entity/
+│   │   └── repository/
+│   ├── presentation/
+│   │   ├── controller/
+│   │   └── dto/
+│   └── service/
+└── resources/                    # The only other direct folder in main/
+    ├── static/
+    │   ├── css/
+    │   ├── js/
+    │   ├── index.html
+    │   ├── main.html
+    │   └── productos.html
+    ├── application.properties
+    └── schema.sql
+```
+
+There is no `src/main/java/` directory. Gradle uses `src/main` as the Java
+source root so `stockdate/` is directly beside `resources/`.
 
 `InventoryManager` depends on `InventoryRepository` rather than containing
 SQL. `BatchEntity` maps the existing `batch` table. The date converter is
