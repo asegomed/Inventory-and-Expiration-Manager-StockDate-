@@ -34,6 +34,24 @@ Phase 2 progress:
 * **Design patterns (week 9):** Done. Observer, Strategy and Factory (see [`Stockdate/README.md`](Stockdate/README.md#design-patterns)).
 * **Database schema (week 11):** Pending. Normalized tables for users, categories and stock movements.
 
+Implemented: dashboard summaries, batch listing and search, batch creation and
+editing, expiration status calculation, and persistence through Spring Data JPA.
+
+Not implemented yet: login and role permissions, batch deletion, stock
+dispatch/discard workflows, and reports. The application currently has no
+login prompt.
+
+---
+
+## Run
+
+From `Stockdate/` run `start.bat` on Windows or `./start.sh` on macOS/Linux.
+The application is served at `http://localhost:8080`. See
+[`Stockdate/README.md`](Stockdate/README.md) for detailed operating
+instructions, API endpoints, and project structure. The explanation of the
+Java layers and folders is in
+[`Stockdate/docs/explicacion.md`](Stockdate/docs/explicacion.md).
+
 ---
 
 ## Technical Stack & Current Setup
