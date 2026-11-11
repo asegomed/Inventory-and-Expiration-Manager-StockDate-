@@ -2,6 +2,9 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.1.2'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+    id 'pmd'
+    id 'checkstyle'
 }
 
 group = 'com.example'
@@ -28,11 +31,13 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-
-    //SQLite database implementation:
-    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // SQLite database support for Hibernate:
     implementation 'org.xerial:sqlite-jdbc:3.46.1.3'
+    runtimeOnly 'org.hibernate.orm:hibernate-community-dialects'
 
 
     
@@ -44,6 +49,6 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
-tasks.named('bootRun') {
+tasks.named('bootRun') { 696353
     standardInput = System.in
 }

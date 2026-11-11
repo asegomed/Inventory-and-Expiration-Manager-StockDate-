@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5f7f2">
+    <title>StockDate | Products</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/app.js" defer></script>
+</head>
+<body>
+<div class="app-shell">
+    <main class="main-content">
+        <header class="topbar">
+            <a class="mobile-brand" href="/index.html" aria-label="Back to StockDate home">
+                <span class="brand-mark" aria-hidden="true">S</span>
+                <span>StockDate</span>
+            </a>
+            <p class="topbar-note">Food inventory management</p>
+            <a class="button button-primary topbar-action" href="/main.html">Main menu</a>
+        </header>
+
+        <div class="page-content">
+            <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+            <section id="inventory-view" class="view">
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">STOCK</p>
+                        <h1>Products</h1>
+                        <p class="muted">Search, review, add, and edit saved food batches.</p>
+                    </div>
+                    <button class="button button-primary" type="button" data-open-register>
+                        <span aria-hidden="true">＋</span> New batch
+                    </button>
+                </div>
+
+                <section class="content-card">
+                    <div class="inventory-toolbar">
+                        <label class="search-box">
+                            <span aria-hidden="true">⌕</span>
+                            <span class="sr-only">Search by product or category</span>
+                            <input id="inventory-search" type="search" placeholder="Search by product or category">
+                        </label>
+                        <span id="inventory-count" class="muted"></span>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Storage location</th>
+                                <th>Expiration</th>
+                                <th>Status</th>
+                                <th><span class="sr-only">Actions</span></th>
+                            </tr>
+                            </thead>
+                            <tbody id="inventory-rows"></tbody>
+                        </table>
+                    </div>
+                    <div id="inventory-empty" class="empty-state" hidden>
+                        <span class="empty-icon" aria-hidden="true"></span>
+                        <h2 id="inventory-empty-title">No batches yet</h2>
+                        <p id="inventory-empty-copy">Add your first batch to see it here.</p>
+                        <button class="button button-primary" type="button" data-open-register>Add batch</button>
+                    </div>
+                </section>
+            </section>
+
+            <section id="register-view" class="view" hidden>
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">INVENTORY</p>
+                        <h1 id="batch-form-title">Add a batch</h1>
+                        <p class="muted">Add a food batch to your inventory.</p>
+                    </div>
+                </div>
+
+                <section class="content-card form-card">
+                    <form id="batch-form">
+                        <div class="form-grid">
+                            <label class="form-field">
+                                <span>Product name</span>
+                                <input name="productName" type="text" maxlength="100" placeholder="e.g. Rice" required>
+                            </label>
+                            <label class="form-field">
+                                <span>Category</span>
+                                <input name="category" type="text" maxlength="60" placeholder="e.g. Grains" required>
+                            </label>
+                            <label class="form-field">
+                                <span>Quantity (units)</span>
+                                <input name="quantity" type="number" min="1" step="1" placeholder="e.g. 20" required>
+                            </label>
+                            <label class="form-field">
+                                <span>Storage location</span>
+                                <input name="storageLocation" type="text" maxlength="100" placeholder="e.g. Shelf A" required>
+                            </label>
+                            <label class="form-field">
+                                <span>Expiration date</span>
+                                <input id="expiration-date" name="expirationDate" type="date" required>
+                            </label>
+                            <label class="form-field">
+                                <span>Date type</span>
+                                <select name="expirationDateType" required>
+                                    <option value="USE_BY">Use by</option>
+                                    <option value="BEST_BEFORE">Best before</option>
+                                </select>
+                            </label>
+                        </div>
+                        <p class="form-hint">All fields are required. The expiration date cannot be in the past.</p>
+                        <div class="form-actions">
+                            <button class="button button-secondary" type="button" data-cancel-form>Cancel</button>
+                            <button id="batch-form-submit" class="button button-primary" type="submit">Save batch</button>
+                        </div>
+                    </form>
+                </section>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

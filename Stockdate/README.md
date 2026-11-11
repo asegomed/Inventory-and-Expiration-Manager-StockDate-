@@ -1,100 +1,102 @@
 # StockDate
 
-StockDate is a web application for tracking food inventory batches and their
-expiration dates. Its Java and Spring Boot backend serves an HTML, CSS, and
-JavaScript interface and exposes an inventory API. Batch data is stored in a
-local SQLite database, so it remains available after the application closes.
+StockDate is a Spring Boot web application for tracking food inventory batches
+and their expiration dates. The frontend is served by Spring Boot, and batch
+data is stored in the local SQLite database `stockdate.db`.
 
 ## Requirements
 
-- JDK 17 or later. The project compiles for Java 17.
-- Windows: run the application with `run.bat` from the project directory.
-- Gradle is provided by the included Wrapper; a separate Gradle installation
-  is not required.
-- An internet connection may be needed on the first run to download Gradle and
+- JDK 17 or later.
+- Gradle is provided by the included Wrapper.
+- Internet access may be required on first launch to download Gradle and
   project dependencies.
 
 ## Run the application
 
-Open a terminal in the directory containing `settings.gradle`, then run:
-
-```powershell
-.\run.bat
-```
-
-The application starts at `http://localhost:8080` and attempts to open that
-address in the default browser. If the browser does not open automatically,
-navigate to the address manually. Stop the application with `Ctrl+C`.
-
-To run the tests on Windows:
-
-```powershell
-.\gradlew.bat test
-```
-
-## Current functionality
-
-- View an inventory dashboard with the total number of batches, batches
-  expiring within seven days, and the next expiration date.
-- Browse batches ordered by expiration date and search by product, category,
-  or storage location.
-- Select **Edit** beside a batch to open the form with its current values,
-  change them, and save the update to the same SQLite record.
-- Register a batch with its product, category, quantity, storage location,
-  expiration date, and date type (`USE_BY` or `BEST_BEFORE`).
-- Validate required fields, positive quantities, and past `USE_BY` dates.
-- Receive expiration status information for each batch.
-
-The API provides `GET /api/inventory` to list batches, `POST /api/inventory`
-to create one, and `PUT /api/inventory/{id}` to update an existing batch.
-Invalid input returns HTTP 400; updating a batch that does not exist returns
-HTTP 404. User authentication, roles, stock dispatch and discard operations,
-and reports are not implemented yet.
-
-## Project structure
+Open a terminal in this directory (the one containing `settings.gradle`) and
+run:
 
 ```text
-Stockdate/
-├── Information/                   # Project reference documents
-├── gradle/wrapper/                # Pinned Gradle Wrapper files
-├── src/
-│   ├── main/
-│   │   ├── java/stockdate/        # Backend Java source
-│   │   │   ├── config/            # Application configuration
-│   │   │   ├── persistence/       # Persistence-related packages
-│   │   │   ├── presentation/      # HTTP controllers and API data objects
-│   │   │   └── service/           # Application and inventory logic
-│   │   └── resources/
-│   │       ├── static/            # Web interface (HTML, CSS, JavaScript)
-│   │       ├── application.properties
-│   │       └── schema.sql         # SQLite schema
-│   └── test/                      # Automated tests
-├── build.gradle                   # Plugins, dependencies, and build settings
-├── gradlew / gradlew.bat          # Gradle Wrapper launchers
-├── run.bat                        # Windows application launcher
-├── settings.gradle                # Gradle project name
-└── README.md                      # This guide
+Windows:     start.bat
+macOS/Linux: ./start.sh
 ```
 
-The source tree contains placeholders for planned features. See
-`src/main/java/stockdate/presentation/README.md` for a file-by-file guide to
-the current project skeleton.
+The application starts at `http://localhost:8080` and attempts to open the
+address in the default browser. If it does not open automatically, navigate
+there manually. Stop the application with `Ctrl+C`.
 
-## Build output and SQLite data
+To run the Gradle verification task:
 
-On Windows, Gradle writes build output to
-`%LOCALAPPDATA%\Stockdate\Stockdate\build` instead of the project directory.
-This avoids conflicts with files synchronized by services such as OneDrive.
-On other systems, Gradle uses the default project `build/` directory.
+```text
+Windows:     gradlew.bat test
+macOS/Linux: sh gradlew test
+```
 
-The SQLite database is stored as `stockdate.db` in the project directory.
-Keep this file if you want to preserve the inventory data when moving or
-backing up the project. It is local application data, not source code.
+There are currently no test source files under `src/test`, so Gradle reports
+`NO-SOURCE` for the test task until tests are added.
 
-## Sharing the project
+## Pages
 
-Include `src/`, `gradle/wrapper/`, the Gradle build files, `run.bat`, and the
-documentation. Generated `.gradle/` and `build/` folders and IDE-specific
-`.idea/` settings are not required. Include `stockdate.db` only if the
-recipient should receive the current inventory data. The recipient needs a
-JDK 17 or later and may need internet access on the first run.
+- `/` and `/main.html`: home dashboard with batch totals, upcoming expirations,
+  and the nearest expiration.
+- `/productos.html`: searchable product list and form to add or edit batches.
+  Use the **Main menu** button to return to the dashboard.
+- `/index.html`: redirects to `/main.html`.
+
+The product page and dashboard use the same inventory API:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/inventory` | List batches, ordered by expiration date |
+| `POST` | `/api/inventory` | Register a batch |
+| `PUT` | `/api/inventory/{id}` | Update an existing batch |
+
+Invalid batch data returns HTTP 400; updating a missing batch returns HTTP
+404. The UI validates required fields, positive quantity, and past `USE_BY`
+dates. Expiration statuses are calculated as `EXPIRED`, `RED`, `YELLOW`, or
+`GREEN`.
+
+## Architecture
+
+The Java sources are under `src/main/java/com/example/stockdate/`, matching
+their declared package names:
+
+- `presentation/controller/` receives HTTP requests and delegates to services.
+- `presentation/dto/` defines request and response data structures.
+- `service/` contains inventory validation and expiration-status logic.
+- `persistence/entity/` maps Java objects to database tables.
+- `persistence/repository/` provides Spring Data JPA database operations.
+- `persistence/converter/` maps SQLite ISO date text to and from `LocalDate`.
+- `config/` contains application support such as browser startup.
+
+`InventoryManager` depends on `InventoryRepository` rather than containing
+SQL. `BatchEntity` maps the existing `batch` table. The date converter is
+necessary because SQLite stores `expiration_date` as `YYYY-MM-DD` text.
+`schema.sql` creates the table when it is absent; Hibernate schema generation
+is disabled to preserve the existing database schema.
+
+The web assets are in `src/main/resources/static/`: `main.html` is the
+dashboard, `productos.html` is the product-management page, `css/styles.css`
+contains shared styling, and `js/main.js` / `js/app.js` implement the respective
+page behavior.
+
+## Authentication and planned features
+
+Login and role-based permissions are not implemented. Spring Security is not
+included, so there is no framework-generated login prompt. User management,
+batch deletion, dispatch/discard workflows, expiration-alert services, and
+reports remain future work.
+
+## Build and local data
+
+`build.gradle` configures Java 17, Spring Boot, Spring Data JPA, SQLite,
+validation, Actuator, and the JaCoCo, PMD, and Checkstyle plugins. On Windows,
+Gradle build output is stored under
+`%LOCALAPPDATA%\Stockdate\Stockdate\build`; elsewhere Gradle uses its normal
+build directory.
+
+The SQLite database is `stockdate.db` in this project directory. Keep it when
+backing up or moving the application if its inventory data should be retained.
+
+See [`docs/explicacion.md`](docs/explicacion.md) for a detailed guide to the
+project folders and files.

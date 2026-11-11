@@ -1,9 +1,8 @@
 # StockDate Project Structure
 
-This guide describes the current StockDate project skeleton, including the
-purpose of its folders and files and which features are implemented or planned.
-It is stored in `presentation/` as documentation; it is not Java source code
-and is not required for the application to run.
+This guide describes the StockDate project structure and identifies which
+features are implemented or planned. It is documentation, not application
+source code, and is not required for the application to run.
 
 ## Project overview
 
@@ -12,20 +11,25 @@ Stockdate/
 ├── .gradle/                              # Local Gradle state and caches
 ├── .idea/                                # Local IntelliJ IDEA settings
 ├── build/                                # Previous/generated build output
+├── docs/
+│   └── explicacion.md                    # This project structure guide
 ├── gradle/wrapper/                       # Gradle Wrapper files
+├── start.bat                              # Windows application launcher
+├── start.sh                               # macOS/Linux application launcher
+├── run.bat                                # Windows launcher implementation
 ├── Information/                          # Project reference documents
 ├── src/
 │   ├── main/
-│   │   ├── java/stockdate/
+│   │   ├── java/com/example/stockdate/
 │   │   │   ├── config/
 │   │   │   ├── persistence/
+│   │   │   │   ├── converter/
 │   │   │   │   ├── entity/
 │   │   │   │   └── repository/
 │   │   │   ├── presentation/
 │   │   │   │   ├── controller/
 │   │   │   │   ├── dto/request/
 │   │   │   │   ├── dto/response/
-│   │   │   │   └── README.md
 │   │   │   ├── service/
 │   │   │   ├── ExpirationDateType.java
 │   │   │   └── StockdateApplication.java
@@ -33,16 +37,17 @@ Stockdate/
 │   │       ├── static/
 │   │       │   ├── css/
 │   │       │   ├── js/
-│   │       │   └── index.html
+│   │       │   ├── index.html
+│   │       │   ├── main.html
+│   │       │   └── productos.html
 │   │       ├── application.properties
 │   │       └── schema.sql
-│   └── test/java/com/example/stockdate/
+│   └── test/                              # No test sources currently
 ├── .gitattributes
 ├── .gitignore
 ├── build.gradle
 ├── gradlew
 ├── gradlew.bat
-├── HELP.md
 ├── README.md
 ├── run.bat
 ├── settings.gradle
@@ -52,7 +57,7 @@ Stockdate/
 
 ## Application source: `src/main`
 
-### Java source: `src/main/java/stockdate`
+### Java source: `src/main/java/com/example/stockdate`
 
 - `StockdateApplication.java`: application entry point; starts Spring Boot and
   its web server.
@@ -61,14 +66,14 @@ Stockdate/
 
 #### `config/`
 
-Contains application configuration and supporting components:
+Contains application support components:
 
 - `BrowserLauncher.java`: attempts to open `http://localhost:8080` in the
   default browser once the server has started.
-- `SecurityConfig.java`: placeholder for future security configuration; it
-  does not currently implement authentication or authorization.
-- `SQLiteDialectConfig.java`: placeholder for future SQLite configuration.
-  The current database connection is configured in `application.properties`.
+- SQLite's Hibernate dialect and datasource settings are configured in
+  `application.properties`; there is no separate dialect configuration class.
+- Spring Security and its generated login page are not included. Authentication
+  and roles are future work.
 
 #### `presentation/`
 
@@ -95,32 +100,32 @@ clients:
     - `DashboardDTO.java`: placeholder for dashboard response data.
     - `ReportDTO.java`: placeholder for report response data.
     - `UserDTO.java`: placeholder for user response data.
-- `README.md`: this guide to the complete project skeleton.
-
 #### `service/`
 
 Contains application and inventory rules:
 
-- `InventoryManager.java`: validates, stores, and sorts batches using SQLite,
-  updates existing records, and calculates the time remaining until expiration
-  and the batch status.
+- `InventoryManager.java`: validates batches, uses `InventoryRepository` to
+  persist them, and calculates the time remaining until expiration and the
+  batch status.
 - `ExpirationAlertService.java`: placeholder for future expiration alerts.
 - `ReportService.java`: placeholder for future report generation.
 - `UserService.java`: placeholder for future user management.
 
 #### `persistence/`
 
-Groups database-related classes. The `entity/` and `repository/` classes are
-currently placeholders; the implemented inventory persistence uses
-`JdbcTemplate` and the SQL schema instead.
+Groups database-related classes. Inventory persistence uses Spring Data JPA
+with the SQLite database and the SQL schema.
 
 - `entity/`: planned data models.
-  - `BatchEntity.java`: planned batch model.
+  - `BatchEntity.java`: JPA entity mapped to the existing `batch` table.
   - `CategoryEntity.java`: planned category model.
   - `StockMovementEntity.java`: planned inventory movement model.
   - `UserEntity.java`: planned user model.
-- `repository/`: planned data access classes.
-  - `InventoryRepository.java`: planned batch repository.
+- `converter/`: conversions between Java types and database representations.
+  - `LocalDateStringConverter.java`: converts SQLite `YYYY-MM-DD` text to and
+    from Java `LocalDate`, matching how dates are stored in the existing table.
+- `repository/`: Spring Data JPA data access interfaces.
+  - `InventoryRepository.java`: Spring Data JPA repository for batches.
   - `MovementRepository.java`: planned stock movement repository.
   - `UserRepository.java`: planned user repository.
 
@@ -130,26 +135,20 @@ currently placeholders; the implemented inventory persistence uses
   name, automatic browser launch, and SQLite connection.
 - `schema.sql`: creates the SQLite `batch` table if it does not already exist.
 - `static/`: frontend files served by Spring Boot.
-  - `index.html`: page structure and interface sections.
-  - `css/styles.css`: layout, colors, and responsive styles.
-  - `js/app.js`: navigation, inventory loading and filtering, expiration
-    summaries, batch form submission, and editing existing batches through the
-    API.
+  - `index.html`: redirects the application root to the dashboard.
+  - `main.html`: home dashboard with inventory and expiration summaries.
+  - `productos.html`: searchable product list and batch add/edit form, with a
+    **Main menu** link back to the dashboard.
+  - `css/styles.css`: shared layout, colors, and responsive styles.
+  - `js/main.js`: loads the dashboard data from the inventory API.
+  - `js/app.js`: loads/searches products and handles batch creation and editing
+    through the same inventory API.
 
-## Automated tests: `src/test`
+## Tests: `src/test`
 
-Contains tests that verify application behavior; these are not part of the
-normal application server:
-
-- `java/com/example/stockdate/StockdateApplicationTests.java`: checks that the
-  Spring Boot application context starts.
-- `service/InventoryManagerTests.java`: tests inventory operations and
-  validation rules.
-- `presentation/controller/InventoryControllerTests.java`: tests inventory
-  HTTP requests, including batch creation, retrieval, and invalid input.
-- `service/package-info.java` and
-  `presentation/controller/package-info.java`: preserve test package
-  structure.
+There are currently no test source files in this directory. The Gradle `test`
+task is configured to use JUnit Platform, but reports `NO-SOURCE` until tests
+are added.
 
 ## Build tools, documentation, and root files
 
@@ -158,6 +157,8 @@ normal application server:
   Wrapper version.
 - `gradlew` and `gradlew.bat`: start the Gradle Wrapper on macOS/Linux and
   Windows, respectively.
+- `start.sh`: starts the application on macOS/Linux using the Gradle Wrapper.
+- `start.bat`: starts the application on Windows through `run.bat`.
 - `run.bat`: finds an available JDK on Windows and starts the application with
   Gradle.
 - `build.gradle`: defines plugins, dependencies, Java compatibility, and build
@@ -168,10 +169,9 @@ normal application server:
 - `.gitignore`: lists local and generated files that should be excluded from
   Git.
 - `.gitattributes`: defines how Git handles file attributes.
-- `README.md`: the main project guide, including requirements and run
+- `README.md`: the project guide, including requirements and run
   instructions.
-- `HELP.md`: generic documentation supplied by the Spring Boot project
-  template.
+- `docs/explicacion.md`: this detailed project-structure guide.
 - `Stockdate.iml`: local IntelliJ IDEA module settings; not needed to run the
   application with the Gradle Wrapper.
 - `Information/`: project reference documents.
@@ -187,6 +187,6 @@ normal application server:
   application data directory described above.
 
 These folders are not required when sharing the source code. Include `src/`,
-`gradle/wrapper/`, the Gradle configuration files, and `run.bat`. A JDK 17 or
-later is required, and Gradle may need internet access on the first run to
-download dependencies.
+`gradle/wrapper/`, the Gradle configuration files, and the launcher scripts.
+A JDK 17 or later is required, and Gradle may need internet access on the first
+run to download dependencies.

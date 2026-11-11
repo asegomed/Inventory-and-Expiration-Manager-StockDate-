@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5f7f2">
+    <title>StockDate | Home</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/main.js" defer></script>
+</head>
+<body>
+<div class="app-shell">
+    <main class="main-content">
+        <header class="topbar">
+            <a class="mobile-brand" href="/main.html" aria-label="StockDate home">
+                <span class="brand-mark" aria-hidden="true">S</span>
+                <span>StockDate</span>
+            </a>
+            <p class="topbar-note">Food inventory management</p>
+            <a class="button button-primary topbar-action" href="/productos.html">Products</a>
+        </header>
+
+        <div class="page-content">
+            <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+            <section id="dashboard-view" class="view">
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">DASHBOARD</p>
+                        <h1>Inventory overview</h1>
+                        <p class="muted">Batches and their expiration dates.</p>
+                    </div>
+                    <span id="today-label" class="date-label"></span>
+                </div>
+
+                <div class="summary-grid" aria-label="Expiration overview">
+                    <article class="summary-card">
+                        <p class="summary-label">Registered batches</p>
+                        <p id="total-count" class="summary-value">0</p>
+                    </article>
+                    <article class="summary-card">
+                        <p class="summary-label">Expiring soon</p>
+                        <p id="red-count" class="summary-value">0</p>
+                        <span class="summary-help">Within the next 7 days</span>
+                    </article>
+                    <article class="summary-card">
+                        <p class="summary-label">Next expiration</p>
+                        <p id="next-expiration" class="summary-value summary-date">—</p>
+                        <span id="next-product" class="summary-help">No batches registered</span>
+                    </article>
+                </div>
+
+                <section class="content-card">
+                    <div class="card-heading">
+                        <div>
+                            <h2>Expiration dates</h2>
+                            <p class="muted">Batches with the nearest expiration dates:</p>
+                        </div>
+                        <a class="text-button" href="/productos.html">View products</a>
+                    </div>
+                    <div id="dashboard-batches" class="batch-list"></div>
+                </section>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>
