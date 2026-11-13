@@ -61,7 +61,7 @@ On Windows the `build/` folder is placed under
 | `GET` | `/api/inventory` | List batches, ordered by expiration date (FEFO) |
 | `POST` | `/api/inventory` | Register a batch |
 | `PUT` | `/api/inventory/{id}` | Update an existing batch |
-| `GET` | `/api/dashboard` | Dashboard summary: count per tier and pinned batches (Expired and Red) |
+| `GET` | `/api/dashboard` | Dashboard summary: count per tier, pinned batches (Expired and Red) and next batch to expire |
 | `GET` | `/actuator/health` | Application health check |
 
 Invalid batch data returns HTTP 400; updating a missing batch returns HTTP

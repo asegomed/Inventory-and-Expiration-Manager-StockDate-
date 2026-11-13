@@ -1,4 +1,5 @@
 package stockdate.presentation.controller;
 
-public class ReportController { // To do: Report controller implementation
+// Placeholder for UC-07 (monthly waste report). Not implemented yet.
+public class ReportController {
 }

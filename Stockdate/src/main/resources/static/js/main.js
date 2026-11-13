@@ -1,38 +1,13 @@
-const API_URL = "/api/inventory";
+// Dashboard page (UC-05). The summary is calculated and cached by the server (GET /api/dashboard).
+const DASHBOARD_URL = "/api/dashboard";
 const elements = {
-    notice: document.querySelector("#notice"),
     dashboardBatches: document.querySelector("#dashboard-batches"),
     totalCount: document.querySelector("#total-count"),
     redCount: document.querySelector("#red-count"),
+    expiredCount: document.querySelector("#expired-count"),
     nextExpiration: document.querySelector("#next-expiration"),
     nextProduct: document.querySelector("#next-product")
 };
-let batches = [];
-
-const statusLabels = {
-    EXPIRED: "Expired",
-    RED: "Expiring soon",
-    YELLOW: "Upcoming",
-    GREEN: "In date"
-};
-
-function formatDate(value) {
-    return new Intl.DateTimeFormat("en-US", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-    }).format(new Date(`${value}T00:00:00`));
-}
-
-function escapeHtml(value) {
-    return String(value).replace(/[&<>"']/g, character => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "\"": "&quot;",
-        "'": "&#39;"
-    })[character]);
-}
 
 function expirationText(batch) {
     if (batch.daysUntilExpiration < 0) {
@@ -47,30 +22,30 @@ function expirationText(batch) {
     return `In ${batch.daysUntilExpiration} days`;
 }
 
-function renderDashboard() {
-    elements.totalCount.textContent = batches.length;
-    elements.redCount.textContent = batches.filter(batch => batch.status === "RED").length;
+function renderDashboard(dashboard) {
+    const total = dashboard.expiredCount + dashboard.redCount + dashboard.yellowCount + dashboard.greenCount;
+    elements.totalCount.textContent = total;
+    elements.redCount.textContent = dashboard.redCount;
+    elements.expiredCount.textContent = dashboard.expiredCount;
 
-    const nextBatch = batches.find(batch => batch.daysUntilExpiration >= 0);
-    elements.nextExpiration.textContent = nextBatch ? formatDate(nextBatch.expirationDate) : "—";
-    elements.nextProduct.textContent = nextBatch ? nextBatch.productName : "No batches registered";
+    const next = dashboard.nextExpiring;
+    elements.nextExpiration.textContent = next ? formatDate(next.expirationDate) : "—";
+    elements.nextProduct.textContent = next ? next.productName : "No upcoming expirations";
 
-    const attentionBatches = batches.filter(batch => batch.status !== "GREEN").slice(0, 5);
+    const attentionBatches = dashboard.pinnedBatches;
     if (attentionBatches.length === 0) {
         elements.dashboardBatches.innerHTML = `
             <div class="empty-state">
                 <span class="empty-icon" aria-hidden="true">✓</span>
                 <h2>All clear</h2>
-                <p>${batches.length === 0
+                <p>${total === 0
                     ? "Add a batch to start tracking expiration dates."
-                    : "No batches are expiring soon."}</p>
+                    : "No batches are expired or expiring soon."}</p>
             </div>`;
         return;
     }
 
-    elements.dashboardBatches.innerHTML = attentionBatches.map(batch => {
-        const status = statusLabels[batch.status] ? batch.status : "GREEN";
-        return `
+    elements.dashboardBatches.innerHTML = attentionBatches.map(batch => `
             <article class="batch-row">
                 <div>
                     <p class="batch-name">${escapeHtml(batch.productName)}</p>
@@ -84,23 +59,19 @@ function renderDashboard() {
                     <p class="batch-date">${formatDate(batch.expirationDate)}</p>
                     <p class="batch-date-label">${expirationText(batch)}</p>
                 </div>
-                <span class="status-badge status-${status.toLowerCase()}">${statusLabels[status]}</span>
-            </article>`;
-    }).join("");
+                ${statusMarkup(batch)}
+            </article>`).join("");
 }
 
-async function loadBatches() {
+async function loadDashboard() {
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch(DASHBOARD_URL);
         if (!response.ok) {
-            throw new Error("Could not load inventory.");
+            throw new Error("Could not load the dashboard.");
         }
-        batches = await response.json();
-        renderDashboard();
+        renderDashboard(await response.json());
     } catch (error) {
-        elements.notice.textContent = `${error.message} Make sure StockDate is running, then try refreshing.`;
-        elements.notice.classList.add("error");
-        elements.notice.hidden = false;
+        showNotice(`${error.message} Make sure StockDate is running, then try refreshing.`, true);
     }
 }
 
@@ -111,4 +82,4 @@ document.querySelector("#today-label").textContent = new Intl.DateTimeFormat("en
     year: "numeric"
 }).format(new Date());
 
-loadBatches();
+loadDashboard();

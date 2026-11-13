@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#f5f7f2">
     <title>StockDate | Home</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/common.js" defer></script>
     <script src="/js/main.js" defer></script>
 </head>
 <body>
@@ -43,6 +44,11 @@
                         <span class="summary-help">Within the next 7 days</span>
                     </article>
                     <article class="summary-card">
+                        <p class="summary-label">Expired</p>
+                        <p id="expired-count" class="summary-value">0</p>
+                        <span class="summary-help">Past their expiration date</span>
+                    </article>
+                    <article class="summary-card">
                         <p class="summary-label">Next expiration</p>
                         <p id="next-expiration" class="summary-value summary-date">—</p>
                         <span id="next-product" class="summary-help">No batches registered</span>
@@ -53,7 +59,7 @@
                     <div class="card-heading">
                         <div>
                             <h2>Expiration dates</h2>
-                            <p class="muted">Batches with the nearest expiration dates:</p>
+                            <p class="muted">Expired batches and batches expiring within 7 days:</p>
                         </div>
                         <a class="text-button" href="/productos.html">View products</a>
                     </div>

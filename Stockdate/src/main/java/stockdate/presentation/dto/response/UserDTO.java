@@ -1,4 +1,5 @@
 package stockdate.presentation.dto.response;
 
-public class UserDTO { // DTO for user response data
+// Placeholder for UC-08 (user data returned to the client). Not implemented yet.
+public class UserDTO {
 }

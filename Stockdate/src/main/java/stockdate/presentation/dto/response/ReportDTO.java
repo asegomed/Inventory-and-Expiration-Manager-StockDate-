@@ -1,4 +1,5 @@
 package stockdate.presentation.dto.response;
 
-public class ReportDTO { // To do: Reports response data when user asks for it
+// Placeholder for UC-07 (monthly waste report data). Not implemented yet.
+public class ReportDTO {
 }

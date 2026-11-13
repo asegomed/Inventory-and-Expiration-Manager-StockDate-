@@ -1,4 +1,5 @@
 package stockdate.presentation.dto.response;
 
-public record ApiError(String message) { // To do: Implement API error response structure
+// JSON body returned with HTTP 400 and 404 errors: {"message": "..."}.
+public record ApiError(String message) {
 }

@@ -1,6 +1,5 @@
 package stockdate.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import stockdate.persistence.entity.BatchEntity;
@@ -32,12 +31,7 @@ public class ExpirationAlertService implements Observer {
     private final AtomicLong stockVersion = new AtomicLong();
     private final AtomicReference<CachedDashboard> cache = new AtomicReference<>();
 
-    @Autowired
-    public ExpirationAlertService(InventoryRepository inventoryRepository, Factory factory) {
-        this(inventoryRepository, factory, Clock.systemDefaultZone());
-    }
-
-    ExpirationAlertService(InventoryRepository inventoryRepository, Factory factory, Clock clock) {
+    public ExpirationAlertService(InventoryRepository inventoryRepository, Factory factory, Clock clock) {
         this.inventoryRepository = inventoryRepository;
         this.factory = factory;
         this.clock = clock;
@@ -64,11 +58,16 @@ public class ExpirationAlertService implements Observer {
     private DashboardDTO buildDashboard(LocalDate today) {
         Map<ExpirationStatus, Integer> counts = new EnumMap<>(ExpirationStatus.class);
         List<BatchDTO> pinned = new ArrayList<>();
+        BatchDTO nextExpiring = null;
+        // Batches come sorted by expiration date, so the first one not yet expired is the next to expire.
         for (BatchEntity batch : inventoryRepository.findAllByOrderByExpirationDateAscIdAsc()) {
             BatchDTO dto = factory.createBatchDto(batch, today);
             counts.merge(dto.status(), 1, Integer::sum);
             if (dto.status() == ExpirationStatus.EXPIRED || dto.status() == ExpirationStatus.RED) {
                 pinned.add(dto);
+            }
+            if (nextExpiring == null && dto.status() != ExpirationStatus.EXPIRED) {
+                nextExpiring = dto;
             }
         }
         return new DashboardDTO(
@@ -76,7 +75,8 @@ public class ExpirationAlertService implements Observer {
                 counts.getOrDefault(ExpirationStatus.RED, 0),
                 counts.getOrDefault(ExpirationStatus.YELLOW, 0),
                 counts.getOrDefault(ExpirationStatus.GREEN, 0),
-                List.copyOf(pinned));
+                List.copyOf(pinned),
+                nextExpiring);
     }
 
     private record CachedDashboard(long version, LocalDate builtOn, DashboardDTO dashboard) {

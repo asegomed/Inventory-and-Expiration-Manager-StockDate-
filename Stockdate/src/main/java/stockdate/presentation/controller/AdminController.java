@@ -1,4 +1,5 @@
 package stockdate.presentation.controller;
 
-public class AdminController { //To do, for http requests and responses
+// Placeholder for UC-08 (user management, ADMIN only). Not implemented yet.
+public class AdminController {
 }

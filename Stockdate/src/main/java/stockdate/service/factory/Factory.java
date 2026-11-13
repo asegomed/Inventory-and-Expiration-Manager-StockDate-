@@ -58,8 +58,9 @@ public class Factory {
     }
 
     public BatchEntity createBatch(CreateBatchRequest request) {
-        return new BatchEntity(request.productName().trim(), request.category().trim(), request.quantity(),
-                request.storageLocation().trim(), request.expirationDate(), request.expirationDateType());
+        CreateBatchRequest data = request.trimmed();
+        return new BatchEntity(data.productName(), data.category(), data.quantity(),
+                data.storageLocation(), data.expirationDate(), data.expirationDateType());
     }
 
     public BatchDTO createBatchDto(BatchEntity batch, LocalDate today) {

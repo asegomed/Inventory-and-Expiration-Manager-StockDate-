@@ -1,4 +1,5 @@
 package stockdate.presentation.dto.request;
 
-public class CreateUserRequest { // To do: for user creation data
+// Placeholder for UC-08 (create a user). Not implemented yet.
+public class CreateUserRequest {
 }

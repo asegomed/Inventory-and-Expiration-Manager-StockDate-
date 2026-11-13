@@ -3,7 +3,6 @@ let batches = [];
 let editingBatchId = null;
 
 const elements = {
-    notice: document.querySelector("#notice"),
     inventoryRows: document.querySelector("#inventory-rows"),
     inventorySearch: document.querySelector("#inventory-search"),
     inventoryCount: document.querySelector("#inventory-count"),
@@ -16,47 +15,6 @@ const elements = {
     formTitle: document.querySelector("#batch-form-title"),
     formSubmit: document.querySelector("#batch-form-submit")
 };
-
-const statusLabels = {
-    EXPIRED: "Expired",
-    RED: "Expiring soon",
-    YELLOW: "Upcoming",
-    GREEN: "In date"
-};
-
-function showNotice(message, isError = false) {
-    elements.notice.textContent = message;
-    elements.notice.classList.toggle("error", isError);
-    elements.notice.hidden = false;
-}
-
-function hideNotice() {
-    elements.notice.hidden = true;
-    elements.notice.classList.remove("error");
-}
-
-function formatDate(value) {
-    return new Intl.DateTimeFormat("en-US", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-    }).format(new Date(`${value}T00:00:00`));
-}
-
-function escapeHtml(value) {
-    return String(value).replace(/[&<>"']/g, character => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "\"": "&quot;",
-        "'": "&#39;"
-    })[character]);
-}
-
-function statusMarkup(batch) {
-    const status = statusLabels[batch.status] ? batch.status : "GREEN";
-    return `<span class="status-badge status-${status.toLowerCase()}">${statusLabels[status]}</span>`;
-}
 
 function renderInventory() {
     const query = elements.inventorySearch.value.trim().toLocaleLowerCase("en-US");

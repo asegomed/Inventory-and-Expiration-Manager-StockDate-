@@ -280,7 +280,7 @@ h1 {
 
 .summary-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -748,10 +748,6 @@ td:first-child {
     .summary-card {
         min-height: 132px;
         padding: 15px;
-    }
-
-    .summary-card:last-child {
-        grid-column: 1 / -1;
     }
 
     .batch-list {

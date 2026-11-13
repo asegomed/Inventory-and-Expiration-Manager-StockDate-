@@ -79,6 +79,8 @@ Contains application support components:
 
 - `BrowserLauncher.java`: attempts to open `http://localhost:8080` in the
   default browser once the server has started.
+- `ClockConfig.java`: provides the `Clock` bean, the single source of "today"
+  for the services, so tests can use a fixed date.
 - `SecurityConfig.java`: Spring Security configuration. For now every route is
   open and CSRF is disabled, so the application works as before until login
   (UC-01) and roles are implemented. It already provides the BCrypt
@@ -103,7 +105,9 @@ clients. It only exchanges DTOs, never entities:
     features are not implemented yet.
 - `dto/`: data transfer objects used by the API.
   - `request/`: request data received from clients.
-    - `CreateBatchRequest.java`: fields needed to register an inventory batch.
+    - `CreateBatchRequest.java`: fields needed to register or edit a batch.
+      Bean Validation annotations (`@NotBlank`, `@Positive`, `@NotNull`)
+      declare the field rules, and `trimmed()` removes surrounding spaces.
     - `CreateUserRequest.java`: placeholder for user creation data.
     - `DiscardRequest.java`: placeholder for an inventory discard request.
     - `DispatchRequest.java`: placeholder for an inventory dispatch request.
@@ -120,7 +124,8 @@ clients. It only exchanges DTOs, never entities:
 
 Contains the business rules:
 
-- `InventoryManager.java`: validates batches, saves them through
+- `InventoryManager.java`: validates batches with the Bean Validation
+  `Validator` and the date strategy, saves them through
   `InventoryRepository` and notifies its observers after each change. It is
   the subject of the Observer pattern.
 - `ExpirationAlertService.java`: builds the dashboard summary and keeps it in a
@@ -168,7 +173,8 @@ SQLite database and the SQL schema.
 - `schema.sql`: creates the SQLite `batch` table if it does not already exist.
   Hibernate schema generation is disabled (`ddl-auto=none`).
 - `static/`: frontend files served by Spring Boot.
-  - `index.html`: redirects the application root to the dashboard.
+  - `index.html`: redirects the application root to the dashboard. It will
+    become the login page with UC-01.
   - `main.html`: home dashboard with inventory and expiration summaries.
   - `productos.html`: searchable product list and batch add/edit form, with a
     **Main menu** link back to the dashboard.

@@ -1,4 +1,5 @@
 package stockdate.service;
 
-public class UserService { // UserService implementation goes here
+// Placeholder for UC-01 and UC-08 (login and user management). Not implemented yet.
+public class UserService {
 }

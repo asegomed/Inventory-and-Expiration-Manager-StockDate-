@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.NoSuchElementException;
 
 @RestControllerAdvice
-public class ApiExceptionHandler { //To handler exceptions and return appropriate HTTP responses 400 and 404
+// Turns service exceptions into HTTP responses: invalid data -> 400, missing batch -> 404.
+public class ApiExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleInvalidRequest(IllegalArgumentException exception) {

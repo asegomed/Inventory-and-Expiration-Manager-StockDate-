@@ -1,4 +1,5 @@
 package stockdate.service;
 
-public class ReportService { // To do: Future report service implementation
+// Placeholder for UC-07 (monthly waste report). Not implemented yet.
+public class ReportService {
 }

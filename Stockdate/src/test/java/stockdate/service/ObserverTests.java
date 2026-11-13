@@ -1,5 +1,7 @@
 package stockdate.service;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import stockdate.ExpirationDateType;
 import stockdate.persistence.entity.BatchEntity;
@@ -33,15 +35,17 @@ class ObserverTests {
 
     private final InventoryRepository repository = mock(InventoryRepository.class);
     private final Factory factory = new Factory(List.of(new UseByStrategy(), new BestBeforeStrategy()), 7, 14);
+    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     @Test
     void subjectNotifiesEveryObserverAfterSavingABatch() {
         Observer first = mock(Observer.class);
         Observer second = mock(Observer.class);
         when(repository.save(any(BatchEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        InventoryManager manager = new InventoryManager(repository, factory, List.of(first, second));
+        InventoryManager manager = new InventoryManager(repository, factory, List.of(first, second),
+                validator, fixedClock(TODAY));
 
-        manager.registerBatch(request(LocalDate.now().plusDays(30)));
+        manager.registerBatch(request(TODAY.plusDays(30)));
 
         verify(first, times(1)).onStockChanged();
         verify(second, times(1)).onStockChanged();
@@ -50,9 +54,10 @@ class ObserverTests {
     @Test
     void subjectDoesNotNotifyWhenValidationFails() {
         Observer observer = mock(Observer.class);
-        InventoryManager manager = new InventoryManager(repository, factory, List.of(observer));
+        InventoryManager manager = new InventoryManager(repository, factory, List.of(observer),
+                validator, fixedClock(TODAY));
         CreateBatchRequest invalid = new CreateBatchRequest(
-                "Milk", "Dairy", 0, "Fridge", LocalDate.now().plusDays(3), ExpirationDateType.USE_BY);
+                "Milk", "Dairy", 0, "Fridge", TODAY.plusDays(3), ExpirationDateType.USE_BY);
 
         assertThrows(IllegalArgumentException.class, () -> manager.registerBatch(invalid));
 
@@ -75,6 +80,7 @@ class ObserverTests {
         assertEquals(1, first.yellowCount());
         assertEquals(1, first.greenCount());
         assertEquals(2, first.pinnedBatches().size());
+        assertEquals(3, first.nextExpiring().daysUntilExpiration());
 
         service.onStockChanged();
         service.getDashboard();
