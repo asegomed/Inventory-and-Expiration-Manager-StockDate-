@@ -41,7 +41,7 @@ Stockdate/
 │   │       │   ├── js/
 │   │       │   ├── index.html
 │   │       │   ├── main.html
-│   │       │   └── productos.html
+│   │       │   └── products.html
 │   │       ├── application.properties
 │   │       └── schema.sql
 │   └── test/java/stockdate/              # JUnit 5 and Mockito tests
@@ -63,8 +63,9 @@ Stockdate/
 ### Java source: `src/main/java/stockdate`
 
 The project uses the standard Gradle/Maven layout: Java sources in
-`src/main/java`, resources in `src/main/resources` and tests in
-`src/test/java`. Each folder matches its declared package (for example
+`src/main/java` and resources in `src/main/resources`. The earlier
+`src/test` directory was removed because its initial tests are no longer
+used. Each Java source folder matches its declared package (for example
 `src/main/java/stockdate/service/` is `package stockdate.service`).
 
 - `StockdateApplication.java`: application entry point; starts Spring Boot and
@@ -176,7 +177,7 @@ SQLite database and the SQL schema.
   - `index.html`: redirects the application root to the dashboard. It will
     become the login page with UC-01.
   - `main.html`: home dashboard with inventory and expiration summaries.
-  - `productos.html`: searchable product list and batch add/edit form, with a
+  - `products.html`: searchable product list and batch add/edit form, with a
     **Main menu** link back to the dashboard.
   - `css/styles.css`: shared layout, colors, and responsive styles.
   - `js/main.js`: loads the dashboard data from the inventory API. It still
@@ -184,21 +185,13 @@ SQLite database and the SQL schema.
   - `js/app.js`: loads/searches products and handles batch creation and editing
     through the same inventory API.
 
-## Tests: `src/test/java/stockdate`
+## Tests
 
-Tests use JUnit 5 and Mockito. JaCoCo measures their coverage after every
-`gradlew test`.
-
-- `StockdateApplicationTests.java`: checks that the Spring context starts.
-- `presentation/controller/InventoryControllerTests.java`: HTTP tests for the
-  inventory and dashboard endpoints (in-memory SQLite).
-- `service/InventoryManagerTests.java`: batch registration, listing, update and
-  validation (in-memory SQLite).
-- `service/ObserverTests.java`: the subject notifies every observer, and the
-  dashboard cache is invalidated on stock or date changes (mocked repository).
-- `service/strategy/StrategyTests.java`: use-by and best-before rules.
-- `service/factory/FactoryTests.java`: strategy selection, entity creation and
-  tier classification.
+The initial `src/test` directory and its tests have been removed because
+they are no longer used. The Gradle test configuration and JUnit/Mockito
+dependencies remain in `build.gradle` in case tests are added again; at
+present, the test task has no project test sources to execute and JaCoCo
+does not provide meaningful coverage.
 
 ## Build tools, documentation, and root files
 

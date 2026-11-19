@@ -32,13 +32,13 @@ Windows:     gradlew.bat build
 macOS/Linux: ./gradlew build
 ```
 
-`build` compiles the code, runs the tests, Checkstyle and PMD, and generates
-the JaCoCo coverage report. To run only the tests use `gradlew test`.
+`build` compiles the code and runs Checkstyle and PMD. The former
+`src/test/` directory has been removed, so there are currently no project
+tests to run and no meaningful JaCoCo coverage report. The Gradle test
+configuration remains available if tests are added later.
 
 | Tool | Configuration | Report (Windows) |
 |---|---|---|
-| JUnit 5 + Mockito | `src/test/java/stockdate/` | `build/reports/tests/test/index.html` |
-| JaCoCo | `build.gradle` (runs after `test`) | `build/reports/jacoco/test/html/index.html` |
 | Checkstyle | `config/checkstyle/checkstyle.xml` | `build/reports/checkstyle/main.html` |
 | PMD | `config/pmd/ruleset.xml` | `build/reports/pmd/main.html` |
 
@@ -50,7 +50,7 @@ On Windows the `build/` folder is placed under
 
 - `/` and `/main.html`: home dashboard with batch totals, upcoming expirations,
   and the nearest expiration.
-- `/productos.html`: searchable product list and form to add or edit batches.
+- `/products.html`: searchable product list and form to add or edit batches.
   Use the **Main menu** button to return to the dashboard.
 - `/index.html`: redirects to `/main.html`.
 
@@ -79,7 +79,7 @@ stockdate.alert.yellow-days=14
 ## Architecture
 
 The application follows a layered architecture. Java sources are in
-`src/main/java/stockdate/` and tests in `src/test/java/stockdate/`:
+`src/main/java/stockdate/`:
 
 ```text
 src/main/
@@ -120,9 +120,6 @@ src/main/
 | **Strategy** | `service/strategy/Strategy.java`, `UseByStrategy`, `BestBeforeStrategy` | Rules that depend on the date type: whether a past date is accepted and whether an expired batch can be dispatched. |
 | **Factory** | `service/factory/Factory.java` | Single place that selects the strategy for a date type and creates `BatchEntity` and `BatchDTO` objects (days left, tier and `dispatchable`). |
 
-Each pattern has its own unit tests (`ObserverTests`, `StrategyTests`,
-`FactoryTests`) that run without a database.
-
 ## Current status
 
 Implemented:
@@ -130,7 +127,8 @@ Implemented:
 - Batch registration, editing and listing (UC-02, partly UC-03).
 - Dashboard summary endpoint with cache (partly UC-05).
 - Observer, Strategy and Factory design patterns.
-- Build with tests, JaCoCo, Checkstyle and PMD.
+- Build and static checks with Checkstyle and PMD. Test sources have been
+  removed; the configured Gradle test task currently has no tests to run.
 
 Not implemented yet:
 
