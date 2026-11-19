@@ -3,6 +3,7 @@ package stockdate.service.factory;
 import org.junit.jupiter.api.Test;
 import stockdate.ExpirationDateType;
 import stockdate.persistence.entity.BatchEntity;
+import stockdate.persistence.entity.CategoryEntity;
 import stockdate.presentation.dto.request.CreateBatchRequest;
 import stockdate.presentation.dto.response.BatchDTO;
 import stockdate.presentation.dto.response.BatchDTO.ExpirationStatus;
@@ -15,8 +16,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 class FactoryTests {
 
@@ -44,11 +47,12 @@ class FactoryTests {
 
     @Test
     void createsTrimmedBatchFromRequest() {
+        CategoryEntity category = mock(CategoryEntity.class);
         BatchEntity batch = factory.createBatch(new CreateBatchRequest(
-                "  Rice ", " Grains ", 3, " Shelf A ", TODAY, ExpirationDateType.BEST_BEFORE));
+                "  Rice ", 1L, 3, " Shelf A ", TODAY, ExpirationDateType.BEST_BEFORE), category);
 
         assertEquals("Rice", batch.getProductName());
-        assertEquals("Grains", batch.getCategory());
+        assertSame(category, batch.getCategory());
         assertEquals("Shelf A", batch.getStorageLocation());
     }
 
@@ -70,7 +74,8 @@ class FactoryTests {
     }
 
     private BatchDTO dto(int daysLeft, ExpirationDateType type) {
-        BatchEntity batch = new BatchEntity("Milk", "Dairy", 2, "Fridge", TODAY.plusDays(daysLeft), type);
+        CategoryEntity category = mock(CategoryEntity.class);
+        BatchEntity batch = new BatchEntity("Milk", category, 2, "Fridge", TODAY.plusDays(daysLeft), type);
         return factory.createBatchDto(batch, TODAY);
     }
 }

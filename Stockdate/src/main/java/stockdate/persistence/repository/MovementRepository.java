@@ -1,5 +1,7 @@
 package stockdate.persistence.repository;
 
-// Placeholder repository for stock movements (week 11 schema).
-public interface MovementRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+import stockdate.persistence.entity.StockMovementEntity;
+
+public interface MovementRepository extends JpaRepository<StockMovementEntity, Long> {
 }

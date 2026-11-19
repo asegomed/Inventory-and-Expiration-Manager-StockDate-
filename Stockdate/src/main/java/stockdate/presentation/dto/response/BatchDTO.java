@@ -4,11 +4,12 @@ import stockdate.ExpirationDateType;
 
 import java.time.LocalDate;
 
-// Batch data sent to the web, including the calculated days left, status tier and dispatchability.
+// Batch data sent to the web, including calculated expiration information.
 public record BatchDTO(
         Long id,
         String productName,
         String category,
+        Long categoryId,
         int quantity,
         String storageLocation,
         LocalDate expirationDate,

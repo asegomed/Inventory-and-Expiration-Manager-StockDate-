@@ -1,7 +1,5 @@
 package stockdate.persistence.entity;
 
-import stockdate.ExpirationDateType;
-import stockdate.persistence.converter.LocalDateStringConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -10,7 +8,11 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import stockdate.ExpirationDateType;
+import stockdate.persistence.converter.LocalDateStringConverter;
 
 import java.time.LocalDate;
 
@@ -25,8 +27,9 @@ public class BatchEntity {
     @Column(name = "product_name", nullable = false)
     private String productName;
 
-    @Column(nullable = false)
-    private String category;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "category_id", nullable = false)
+    private CategoryEntity category;
 
     @Column(nullable = false)
     private int quantity;
@@ -45,8 +48,9 @@ public class BatchEntity {
     protected BatchEntity() {
     }
 
-    public BatchEntity(String productName, String category, int quantity, String storageLocation,
-                       LocalDate expirationDate, ExpirationDateType expirationDateType) {
+    public BatchEntity(String productName, CategoryEntity category, int quantity,
+                       String storageLocation, LocalDate expirationDate,
+                       ExpirationDateType expirationDateType) {
         this.productName = productName;
         this.category = category;
         this.quantity = quantity;
@@ -55,8 +59,9 @@ public class BatchEntity {
         this.expirationDateType = expirationDateType;
     }
 
-    public void update(String productName, String category, int quantity, String storageLocation,
-                       LocalDate expirationDate, ExpirationDateType expirationDateType) {
+    public void update(String productName, CategoryEntity category, int quantity,
+                       String storageLocation, LocalDate expirationDate,
+                       ExpirationDateType expirationDateType) {
         this.productName = productName;
         this.category = category;
         this.quantity = quantity;
@@ -73,7 +78,7 @@ public class BatchEntity {
         return productName;
     }
 
-    public String getCategory() {
+    public CategoryEntity getCategory() {
         return category;
     }
 

@@ -1,0 +1,43 @@
+@startuml
+
+entity category {
+    * id : INTEGER <<PK>>
+    --
+    * name : TEXT <<UNIQUE>>
+}
+
+entity users {
+    * id : INTEGER <<PK>>
+    --
+    * username : TEXT <<UNIQUE>>
+    * password_hash : TEXT
+    * role : TEXT
+}
+
+entity batch {
+    * id : INTEGER <<PK>>
+    --
+    * product_name : TEXT
+    * category_id : INTEGER <<FK>>
+    * quantity : INTEGER
+    * storage_location : TEXT
+    * expiration_date : TEXT
+    * expiration_date_type : TEXT
+}
+
+entity stock_movement {
+    * id : INTEGER <<PK>>
+    --
+    * batch_id : INTEGER <<FK>>
+    * user_id : INTEGER <<FK>>
+    * type : TEXT
+    * quantity : INTEGER
+      reason : TEXT
+    * created_at : TEXT
+}
+
+category ||--o{ batch
+batch ||--o{ stock_movement
+users ||--o{ stock_movement
+
+@enduml

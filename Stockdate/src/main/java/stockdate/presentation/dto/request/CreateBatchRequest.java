@@ -7,19 +7,19 @@ import stockdate.ExpirationDateType;
 
 import java.time.LocalDate;
 
-// Data sent by the web form to register or edit a batch. The annotations are the field rules (UC-02, UC-03).
+// Data sent by the web form to register or edit a batch.
 public record CreateBatchRequest(
         @NotBlank(message = "Product name is required.") String productName,
-        @NotBlank(message = "Category is required.") String category,
+        @NotNull(message = "Category is required.")
+        @Positive(message = "Category ID must be positive.") Long categoryId,
         @Positive(message = "Quantity must be greater than zero.") int quantity,
         @NotBlank(message = "Storage location is required.") String storageLocation,
         @NotNull(message = "Date and date type are required.") LocalDate expirationDate,
         @NotNull(message = "Date and date type are required.") ExpirationDateType expirationDateType
 ) {
 
-    // Same data with surrounding spaces removed from the text fields.
     public CreateBatchRequest trimmed() {
-        return new CreateBatchRequest(productName.trim(), category.trim(), quantity, storageLocation.trim(),
+        return new CreateBatchRequest(productName.trim(), categoryId, quantity, storageLocation.trim(),
                 expirationDate, expirationDateType);
     }
 }
