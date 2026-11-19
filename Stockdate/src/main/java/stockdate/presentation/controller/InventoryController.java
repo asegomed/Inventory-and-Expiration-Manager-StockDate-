@@ -1,6 +1,7 @@
 package stockdate.presentation.controller;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,6 +50,12 @@ public class InventoryController {
     @PutMapping("/inventory/{id}")
     public BatchDTO updateBatch(@PathVariable long id, @RequestBody CreateBatchRequest request) {
         return inventoryManager.updateBatch(id, request);
+    }
+
+    @DeleteMapping("/inventory/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteBatch(@PathVariable long id) {
+        inventoryManager.deleteBatch(id);
     }
 
     @GetMapping("/dashboard")

@@ -18,33 +18,32 @@ Stockdate/
 ├── gradle/wrapper/                       # Gradle Wrapper files
 ├── Information/                          # Project reference documents (Phase 1 PDF)
 ├── src/
-│   ├── main/
-│   │   ├── java/stockdate/               # Java package root
-│   │   │   ├── config/
-│   │   │   ├── persistence/
-│   │   │   │   ├── converter/
-│   │   │   │   ├── entity/
-│   │   │   │   └── repository/
-│   │   │   ├── presentation/
-│   │   │   │   ├── controller/
-│   │   │   │   ├── dto/request/
-│   │   │   │   └── dto/response/
-│   │   │   ├── service/
-│   │   │   │   ├── factory/              # Factory pattern
-│   │   │   │   ├── observer/             # Observer pattern
-│   │   │   │   └── strategy/             # Strategy pattern
-│   │   │   ├── ExpirationDateType.java
-│   │   │   └── StockdateApplication.java
-│   │   └── resources/
-│   │       ├── static/
-│   │       │   ├── css/
-│   │       │   ├── js/
-│   │       │   ├── index.html
-│   │       │   ├── main.html
-│   │       │   └── products.html
-│   │       ├── application.properties
-│   │       └── schema.sql
-│   └── test/java/stockdate/              # JUnit 5 and Mockito tests
+│   └── main/
+│       ├── java/stockdate/               # Java package root
+│       │   ├── config/
+│       │   ├── persistence/
+│       │   │   ├── converter/
+│       │   │   ├── entity/
+│       │   │   └── repository/
+│       │   ├── presentation/
+│       │   │   ├── controller/
+│       │   │   ├── dto/request/
+│       │   │   └── dto/response/
+│       │   ├── service/
+│       │   │   ├── factory/              # Factory pattern
+│       │   │   ├── observer/             # Observer pattern
+│       │   │   └── strategy/             # Strategy pattern
+│       │   ├── ExpirationDateType.java
+│       │   └── StockdateApplication.java
+│       └── resources/
+│           ├── static/
+│           │   ├── css/
+│           │   ├── js/
+│           │   ├── index.html
+│           │   ├── main.html
+│           │   └── products.html
+│           ├── application.properties
+│           └── schema.sql
 ├── .gitattributes
 ├── .gitignore
 ├── build.gradle
@@ -97,7 +96,8 @@ clients. It only exchanges DTOs, never entities:
 - `controller/`: handles HTTP requests and responses.
   - `InventoryController.java`: exposes batch listing
     (`GET /api/inventory`), creation (`POST /api/inventory`), updates
-    (`PUT /api/inventory/{id}`) and the dashboard summary
+    (`PUT /api/inventory/{id}`), deletion (`DELETE /api/inventory/{id}`) and
+    the dashboard summary
     (`GET /api/dashboard`, delegated to `ExpirationAlertService`).
   - `ApiExceptionHandler.java`: converts invalid-request exceptions to HTTP
     400 responses and missing-batch exceptions to HTTP 404 responses.
@@ -126,9 +126,9 @@ clients. It only exchanges DTOs, never entities:
 Contains the business rules:
 
 - `InventoryManager.java`: validates batches with the Bean Validation
-  `Validator` and the date strategy, saves them through
-  `InventoryRepository` and notifies its observers after each change. It is
-  the subject of the Observer pattern.
+  `Validator` and the date strategy, saves, updates, or deletes them through
+  `InventoryRepository` and notifies its observers after each successful
+  change. It is the subject of the Observer pattern.
 - `ExpirationAlertService.java`: builds the dashboard summary and keeps it in a
   cache. It is the observer of the Observer pattern: a stock change or a new
   day invalidates the cache.
@@ -187,11 +187,10 @@ SQLite database and the SQL schema.
 
 ## Tests
 
-The initial `src/test` directory and its tests have been removed because
-they are no longer used. The Gradle test configuration and JUnit/Mockito
-dependencies remain in `build.gradle` in case tests are added again; at
-present, the test task has no project test sources to execute and JaCoCo
-does not provide meaningful coverage.
+The initial `src/test` directory and its test files have been removed.
+JUnit and Mockito remain configured in `build.gradle` for future tests,
+but the test task currently has no project test sources and JaCoCo cannot
+produce a meaningful coverage report.
 
 ## Build tools, documentation, and root files
 

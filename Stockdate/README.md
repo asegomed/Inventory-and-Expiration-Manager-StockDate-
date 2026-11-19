@@ -61,11 +61,12 @@ On Windows the `build/` folder is placed under
 | `GET` | `/api/inventory` | List batches, ordered by expiration date (FEFO) |
 | `POST` | `/api/inventory` | Register a batch |
 | `PUT` | `/api/inventory/{id}` | Update an existing batch |
+| `DELETE` | `/api/inventory/{id}` | Delete a batch (204, or 404 if it does not exist) |
 | `GET` | `/api/dashboard` | Dashboard summary: count per tier, pinned batches (Expired and Red) and next batch to expire |
 | `GET` | `/actuator/health` | Application health check |
 
-Invalid batch data returns HTTP 400; updating a missing batch returns HTTP
-404. Every batch is returned with `daysUntilExpiration`, a `status`
+Invalid batch data returns HTTP 400; updating or deleting a missing batch
+returns HTTP 404. Every batch is returned with `daysUntilExpiration`, a `status`
 (`EXPIRED`, `RED`, `YELLOW` or `GREEN`) and `dispatchable` (`false` for a
 use-by batch that has already expired).
 
@@ -116,7 +117,7 @@ src/main/
 
 | Pattern | Files | Role |
 |---|---|---|
-| **Observer** | `service/observer/Observer.java`, `InventoryManager` (subject), `ExpirationAlertService` (observer) | After a batch is saved, `InventoryManager` notifies its observers. `ExpirationAlertService` invalidates its cached dashboard asynchronously (`@Async`); the summary is also rebuilt when the date changes. |
+| **Observer** | `service/observer/Observer.java`, `InventoryManager` (subject), `ExpirationAlertService` (observer) | After a batch is registered, updated or deleted, `InventoryManager` notifies its observers. `ExpirationAlertService` invalidates its cached dashboard asynchronously (`@Async`); the summary is also rebuilt when the date changes. |
 | **Strategy** | `service/strategy/Strategy.java`, `UseByStrategy`, `BestBeforeStrategy` | Rules that depend on the date type: whether a past date is accepted and whether an expired batch can be dispatched. |
 | **Factory** | `service/factory/Factory.java` | Single place that selects the strategy for a date type and creates `BatchEntity` and `BatchDTO` objects (days left, tier and `dispatchable`). |
 
@@ -124,11 +125,11 @@ src/main/
 
 Implemented:
 
-- Batch registration, editing and listing (UC-02, partly UC-03).
+- Batch registration, editing, deletion and listing (UC-02, partly UC-03).
 - Dashboard summary endpoint with cache (partly UC-05).
 - Observer, Strategy and Factory design patterns.
-- Build and static checks with Checkstyle and PMD. Test sources have been
-  removed; the configured Gradle test task currently has no tests to run.
+- Build and static checks with Checkstyle and PMD. The test sources have
+  been removed, so the configured Gradle test task currently has no tests to run.
 
 Not implemented yet:
 

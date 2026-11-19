@@ -79,6 +79,13 @@ public class InventoryManager {
         return factory.createBatchDto(saved, today);
     }
 
+    public void deleteBatch(long id) {
+        BatchEntity batch = inventoryRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Batch not found."));
+        inventoryRepository.delete(batch);
+        notifyObservers();
+    }
+
     private void notifyObservers() {
         for (Observer observer : observers) {
             observer.onStockChanged();
