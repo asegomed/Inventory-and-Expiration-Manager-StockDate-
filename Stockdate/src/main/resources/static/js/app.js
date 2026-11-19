@@ -88,7 +88,7 @@ function editBatch(batchId) {
 
     editingBatchId = batch.id;
     elements.form.elements.productName.value = batch.productName;
-    elements.form.elements.category.value = batch.category;
+    elements.form.elements.categoryId.value = batch.categoryId;
     elements.form.elements.quantity.value = batch.quantity;
     elements.form.elements.storageLocation.value = batch.storageLocation;
     elements.form.elements.expirationDate.value = batch.expirationDate;
@@ -121,18 +121,21 @@ document.querySelectorAll("[data-open-register]").forEach(button => {
 
 elements.inventorySearch.addEventListener("input", renderInventory);
 elements.expirationDateType.addEventListener("change", updateExpirationDateMinimum);
+
 elements.inventoryRows.addEventListener("click", event => {
     const editButton = event.target.closest("[data-edit-id]");
     if (editButton) {
         editBatch(Number(editButton.dataset.editId));
     }
 });
+
 elements.form.addEventListener("reset", () => {
     editingBatchId = null;
     elements.formTitle.textContent = "Add a batch";
     elements.formSubmit.textContent = "Save batch";
     updateExpirationDateMinimum();
 });
+
 document.querySelector("[data-cancel-form]").addEventListener("click", () => {
     elements.form.reset();
     showView("inventory");
@@ -149,7 +152,7 @@ elements.form.addEventListener("submit", async event => {
     const formData = new FormData(elements.form);
     const request = {
         productName: formData.get("productName").trim(),
-        category: formData.get("category").trim(),
+        categoryId: Number(formData.get("categoryId")),
         quantity: Number(formData.get("quantity")),
         storageLocation: formData.get("storageLocation").trim(),
         expirationDate: formData.get("expirationDate"),
@@ -163,6 +166,7 @@ elements.form.addEventListener("submit", async event => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(request)
         });
+
         const result = await response.json();
         if (!response.ok) {
             throw new Error(result.message || (isEditing ? "Could not update the batch." : "Could not save the batch."));
@@ -186,4 +190,20 @@ elements.form.addEventListener("submit", async event => {
     }
 });
 
-loadBatches();
+async function loadCategories() {
+    try {
+        const response = await fetch("/api/categories");
+        if (!response.ok) {
+            throw new Error("Could not load categories.");
+        }
+        const categories = await response.json();
+        const select = elements.form.elements.categoryId;
+        for (const category of categories) {
+            select.add(new Option(category.name, category.id));
+        }
+    } catch (error) {
+        showNotice(error.message, true);
+    }
+}
+
+loadCategories().then(loadBatches);

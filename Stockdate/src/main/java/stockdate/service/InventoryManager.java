@@ -4,6 +4,8 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
 import stockdate.persistence.entity.BatchEntity;
+import stockdate.persistence.entity.CategoryEntity;
+import stockdate.persistence.repository.CategoryRepository;
 import stockdate.persistence.repository.InventoryRepository;
 import stockdate.presentation.dto.request.CreateBatchRequest;
 import stockdate.presentation.dto.response.BatchDTO;
@@ -16,7 +18,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-// Validates and manages inventory batches. Subject of the Observer pattern: notifies stock changes.
+// Validates and manages inventory batches. Notifies observers when stock changes.
 @Service
 public class InventoryManager {
 
@@ -25,14 +27,16 @@ public class InventoryManager {
     private final List<Observer> observers;
     private final Validator validator;
     private final Clock clock;
+    private final CategoryRepository categoryRepository;
 
     public InventoryManager(InventoryRepository inventoryRepository, Factory factory, List<Observer> observers,
-                            Validator validator, Clock clock) {
+                            Validator validator, Clock clock, CategoryRepository categoryRepository) {
         this.inventoryRepository = inventoryRepository;
         this.factory = factory;
         this.observers = List.copyOf(observers);
         this.validator = validator;
         this.clock = clock;
+        this.categoryRepository = categoryRepository;
     }
 
     public List<BatchDTO> getBatches() {
@@ -42,10 +46,21 @@ public class InventoryManager {
                 .toList();
     }
 
+    public List<CategoryEntity> getCategories() {
+        return categoryRepository.findAll();
+    }
+
+    private CategoryEntity findCategory(Long id) {
+        return categoryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Category not found."));
+    }
+
     public BatchDTO registerBatch(CreateBatchRequest request) {
         LocalDate today = LocalDate.now(clock);
         validateBatch(request, today);
-        BatchEntity saved = inventoryRepository.save(factory.createBatch(request));
+
+        CategoryEntity category = findCategory(request.categoryId());
+        BatchEntity saved = inventoryRepository.save(factory.createBatch(request, category));
         notifyObservers();
         return factory.createBatchDto(saved, today);
     }
@@ -57,7 +72,7 @@ public class InventoryManager {
         BatchEntity batch = inventoryRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Batch not found."));
         CreateBatchRequest data = request.trimmed();
-        batch.update(data.productName(), data.category(), data.quantity(),
+        batch.update(data.productName(), findCategory(data.categoryId()), data.quantity(),
                 data.storageLocation(), data.expirationDate(), data.expirationDateType());
         BatchEntity saved = inventoryRepository.save(batch);
         notifyObservers();
@@ -70,7 +85,6 @@ public class InventoryManager {
         }
     }
 
-    // Field rules come from the annotations on CreateBatchRequest; the date rule depends on its type (Strategy).
     private void validateBatch(CreateBatchRequest request, LocalDate today) {
         if (request == null) {
             throw new IllegalArgumentException("Batch data is required.");

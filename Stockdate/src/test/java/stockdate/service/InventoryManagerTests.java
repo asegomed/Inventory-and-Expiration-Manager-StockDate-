@@ -1,14 +1,15 @@
 package stockdate.service;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.jdbc.Sql;
 import stockdate.ExpirationDateType;
+import stockdate.persistence.repository.InventoryRepository;
 import stockdate.presentation.dto.request.CreateBatchRequest;
 import stockdate.presentation.dto.response.BatchDTO;
 import stockdate.presentation.dto.response.BatchDTO.ExpirationStatus;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import stockdate.persistence.repository.InventoryRepository;
 
 import java.time.LocalDate;
 
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         "spring.datasource.hikari.maximum-pool-size=1",
         "stockdate.browser.open=false"
 })
+@Sql(statements = "INSERT OR IGNORE INTO category (id, name) VALUES (1, 'Grains')")
 class InventoryManagerTests {
 
     @Autowired
@@ -46,7 +48,7 @@ class InventoryManagerTests {
     void rejectsUseByDatesInThePast() {
         CreateBatchRequest request = new CreateBatchRequest(
                 "Milk",
-                "Dairy",
+                1L,
                 2,
                 "Shelf A",
                 LocalDate.now().minusDays(1),
@@ -60,7 +62,7 @@ class InventoryManagerTests {
     void rejectsNonPositiveQuantities() {
         CreateBatchRequest request = new CreateBatchRequest(
                 "Rice",
-                "Grains",
+                1L,
                 0,
                 "Shelf A",
                 LocalDate.now().plusDays(30),
@@ -75,7 +77,7 @@ class InventoryManagerTests {
         BatchDTO created = inventoryManager.registerBatch(batch("Rice", LocalDate.now().plusDays(30)));
         CreateBatchRequest changes = new CreateBatchRequest(
                 "Brown rice",
-                "Grains",
+                1L,
                 8,
                 "Shelf B",
                 LocalDate.now().plusDays(45),
@@ -93,7 +95,7 @@ class InventoryManagerTests {
     private CreateBatchRequest batch(String productName, LocalDate expirationDate) {
         return new CreateBatchRequest(
                 productName,
-                "Grains",
+                1L,
                 4,
                 "Shelf A",
                 expirationDate,

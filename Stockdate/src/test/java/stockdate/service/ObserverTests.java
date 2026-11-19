@@ -5,6 +5,8 @@ import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import stockdate.ExpirationDateType;
 import stockdate.persistence.entity.BatchEntity;
+import stockdate.persistence.entity.CategoryEntity;
+import stockdate.persistence.repository.CategoryRepository;
 import stockdate.persistence.repository.InventoryRepository;
 import stockdate.presentation.dto.request.CreateBatchRequest;
 import stockdate.presentation.dto.response.DashboardDTO;
@@ -18,6 +20,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -34,6 +37,7 @@ class ObserverTests {
     private static final LocalDate TODAY = LocalDate.of(2026, 11, 11);
 
     private final InventoryRepository repository = mock(InventoryRepository.class);
+    private final CategoryRepository categoryRepository = mock(CategoryRepository.class);
     private final Factory factory = new Factory(List.of(new UseByStrategy(), new BestBeforeStrategy()), 7, 14);
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
@@ -41,9 +45,11 @@ class ObserverTests {
     void subjectNotifiesEveryObserverAfterSavingABatch() {
         Observer first = mock(Observer.class);
         Observer second = mock(Observer.class);
+        CategoryEntity category = mock(CategoryEntity.class);
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(repository.save(any(BatchEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         InventoryManager manager = new InventoryManager(repository, factory, List.of(first, second),
-                validator, fixedClock(TODAY));
+                validator, fixedClock(TODAY), categoryRepository);
 
         manager.registerBatch(request(TODAY.plusDays(30)));
 
@@ -55,9 +61,9 @@ class ObserverTests {
     void subjectDoesNotNotifyWhenValidationFails() {
         Observer observer = mock(Observer.class);
         InventoryManager manager = new InventoryManager(repository, factory, List.of(observer),
-                validator, fixedClock(TODAY));
+                validator, fixedClock(TODAY), categoryRepository);
         CreateBatchRequest invalid = new CreateBatchRequest(
-                "Milk", "Dairy", 0, "Fridge", TODAY.plusDays(3), ExpirationDateType.USE_BY);
+                "Milk", 1L, 0, "Fridge", TODAY.plusDays(3), ExpirationDateType.USE_BY);
 
         assertThrows(IllegalArgumentException.class, () -> manager.registerBatch(invalid));
 
@@ -104,12 +110,13 @@ class ObserverTests {
     }
 
     private BatchEntity batch(int daysLeft) {
-        return new BatchEntity("Milk", "Dairy", 2, "Fridge", TODAY.plusDays(daysLeft),
+        CategoryEntity category = mock(CategoryEntity.class);
+        return new BatchEntity("Milk", category, 2, "Fridge", TODAY.plusDays(daysLeft),
                 ExpirationDateType.BEST_BEFORE);
     }
 
     private CreateBatchRequest request(LocalDate expirationDate) {
-        return new CreateBatchRequest("Rice", "Grains", 4, "Shelf A", expirationDate,
+        return new CreateBatchRequest("Rice", 1L, 4, "Shelf A", expirationDate,
                 ExpirationDateType.BEST_BEFORE);
     }
 

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import stockdate.ExpirationDateType;
 import stockdate.persistence.entity.BatchEntity;
+import stockdate.persistence.entity.CategoryEntity;
 import stockdate.presentation.dto.request.CreateBatchRequest;
 import stockdate.presentation.dto.response.BatchDTO;
 import stockdate.presentation.dto.response.BatchDTO.ExpirationStatus;
@@ -16,17 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Factory pattern: the single place where the service layer creates its objects.
- *
- * <ul>
- *     <li>{@link #createStrategy(ExpirationDateType)} returns the {@link Strategy} for a date type.</li>
- *     <li>{@link #createBatch(CreateBatchRequest)} builds a new {@link BatchEntity} from a form.</li>
- *     <li>{@link #createBatchDto(BatchEntity, LocalDate)} builds the {@link BatchDTO} sent to the web,
- *     including days left and the status tier (thresholds read from application.properties).</li>
- * </ul>
- *
- * <p>Used by {@link stockdate.service.InventoryManager} and
- * {@link stockdate.service.ExpirationAlertService}, so both build batches the same way.
+ * Creates batches and their DTOs and selects the strategy for each expiration date type.
  */
 @Component
 public class Factory {
@@ -57,9 +48,9 @@ public class Factory {
         return strategies.get(type);
     }
 
-    public BatchEntity createBatch(CreateBatchRequest request) {
+    public BatchEntity createBatch(CreateBatchRequest request, CategoryEntity category) {
         CreateBatchRequest data = request.trimmed();
-        return new BatchEntity(data.productName(), data.category(), data.quantity(),
+        return new BatchEntity(data.productName(), category, data.quantity(),
                 data.storageLocation(), data.expirationDate(), data.expirationDateType());
     }
 
@@ -67,7 +58,8 @@ public class Factory {
         long days = ChronoUnit.DAYS.between(today, batch.getExpirationDate());
         boolean dispatchable = createStrategy(batch.getExpirationDateType())
                 .canBeDispatched(batch.getExpirationDate(), today);
-        return new BatchDTO(batch.getId(), batch.getProductName(), batch.getCategory(), batch.getQuantity(),
+        return new BatchDTO(batch.getId(), batch.getProductName(), batch.getCategory().getName(),
+                batch.getCategory().getId(), batch.getQuantity(),
                 batch.getStorageLocation(), batch.getExpirationDate(), batch.getExpirationDateType(),
                 days, classify(days), dispatchable);
     }

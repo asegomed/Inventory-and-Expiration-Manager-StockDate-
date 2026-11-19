@@ -1,9 +1,10 @@
 package stockdate.presentation.controller;
 
-import stockdate.ExpirationDateType;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.jdbc.Sql;
+import stockdate.ExpirationDateType;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
                 "spring.datasource.hikari.maximum-pool-size=1"
         }
 )
+@Sql(statements = "INSERT OR IGNORE INTO category (id, name) VALUES (1, 'Grains')")
 class InventoryControllerTests {
 
     @LocalServerPort
@@ -34,7 +36,7 @@ class InventoryControllerTests {
         String requestBody = """
                 {
                   "productName": "Rice",
-                  "category": "Grains",
+                  "categoryId": 1,
                   "quantity": 10,
                   "storageLocation": "Shelf A",
                   "expirationDate": "%s",
@@ -58,7 +60,7 @@ class InventoryControllerTests {
         String requestBody = """
                 {
                   "productName": "Rice",
-                  "category": "Grains",
+                  "categoryId": 1,
                   "quantity": 0,
                   "storageLocation": "Shelf A",
                   "expirationDate": "%s",
@@ -77,13 +79,13 @@ class InventoryControllerTests {
 
     @Test
     void updatesAndReturnsExistingBatch() throws IOException, InterruptedException {
-        String createBody = batchJson("Rice", "Grains", 10, "Shelf A",
+        String createBody = batchJson("Rice", 1L, 10, "Shelf A",
                 LocalDate.now().plusDays(30), "BEST_BEFORE");
         HttpResponse<String> created = send(createBody);
         assertEquals(201, created.statusCode());
         long id = Long.parseLong(created.body().replaceFirst(".*\"id\":(\\d+).*", "$1"));
 
-        String updateBody = batchJson("Brown rice", "Grains", 15, "Shelf B",
+        String updateBody = batchJson("Brown rice", 1L, 15, "Shelf B",
                 LocalDate.now().plusDays(45), "BEST_BEFORE");
         HttpResponse<String> updated = send("PUT", "/api/inventory/" + id, updateBody);
 
@@ -95,7 +97,7 @@ class InventoryControllerTests {
 
     @Test
     void returnsNotFoundWhenUpdatingMissingBatch() throws IOException, InterruptedException {
-        String updateBody = batchJson("Rice", "Grains", 5, "Shelf A",
+        String updateBody = batchJson("Rice", 1L, 5, "Shelf A",
                 LocalDate.now().plusDays(30), "BEST_BEFORE");
 
         HttpResponse<String> response = send("PUT", "/api/inventory/999999", updateBody);
@@ -106,7 +108,7 @@ class InventoryControllerTests {
 
     @Test
     void returnsDashboardSummary() throws IOException, InterruptedException {
-        send(batchJson("Milk", "Dairy", 2, "Fridge", LocalDate.now().plusDays(2), "USE_BY"));
+        send(batchJson("Milk", 1L, 2, "Fridge", LocalDate.now().plusDays(2), "USE_BY"));
 
         HttpResponse<String> response = send("GET", "/api/dashboard", null);
 
@@ -136,17 +138,17 @@ class InventoryControllerTests {
         return HttpClient.newHttpClient().send(request.build(), HttpResponse.BodyHandlers.ofString());
     }
 
-    private String batchJson(String productName, String category, int quantity,
+    private String batchJson(String productName, long categoryId, int quantity,
                              String location, LocalDate expirationDate, String dateType) {
         return """
                 {
                   "productName": "%s",
-                  "category": "%s",
+                  "categoryId": %d,
                   "quantity": %d,
                   "storageLocation": "%s",
                   "expirationDate": "%s",
                   "expirationDateType": "%s"
                 }
-                """.formatted(productName, category, quantity, location, expirationDate, dateType);
+                """.formatted(productName, categoryId, quantity, location, expirationDate, dateType);
     }
 }
