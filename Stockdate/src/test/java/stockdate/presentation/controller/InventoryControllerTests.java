@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(
@@ -105,6 +106,27 @@ class InventoryControllerTests {
     }
 
     @Test
+    void deletesExistingBatch() throws IOException, InterruptedException {
+        HttpResponse<String> created = send(batchJson("Beans", "Canned", 6, "Shelf C",
+                LocalDate.now().plusDays(60), "BEST_BEFORE"));
+        assertEquals(201, created.statusCode());
+        long id = Long.parseLong(created.body().replaceFirst(".*\"id\":(\\d+).*", "$1"));
+
+        HttpResponse<String> deleted = send("DELETE", "/api/inventory/" + id, null);
+
+        assertEquals(204, deleted.statusCode());
+        assertFalse(send(null).body().contains("\"id\":" + id + ","));
+    }
+
+    @Test
+    void returnsNotFoundWhenDeletingMissingBatch() throws IOException, InterruptedException {
+        HttpResponse<String> response = send("DELETE", "/api/inventory/999999", null);
+
+        assertEquals(404, response.statusCode());
+        assertTrue(response.body().contains("Batch not found."));
+    }
+
+    @Test
     void returnsDashboardSummary() throws IOException, InterruptedException {
         send(batchJson("Milk", "Dairy", 2, "Fridge", LocalDate.now().plusDays(2), "USE_BY"));
 
@@ -123,7 +145,9 @@ class InventoryControllerTests {
             throws IOException, InterruptedException {
         HttpRequest.Builder request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + path));
-        if (body == null) {
+        if ("DELETE".equals(method)) {
+            request.DELETE();
+        } else if (body == null) {
             request.GET();
         } else {
             request.header("Content-Type", "application/json");

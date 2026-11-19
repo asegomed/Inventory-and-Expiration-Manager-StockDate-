@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import stockdate.persistence.repository.InventoryRepository;
 
 import java.time.LocalDate;
+import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -88,6 +89,18 @@ class InventoryManagerTests {
         assertEquals("Brown rice", updated.productName());
         assertEquals("Brown rice", inventoryManager.getBatches().get(0).productName());
         assertEquals(8, inventoryManager.getBatches().get(0).quantity());
+    }
+
+    @Test
+    void deletesBatchAndRejectsMissingIds() {
+        BatchDTO kept = inventoryManager.registerBatch(batch("Rice", LocalDate.now().plusDays(30)));
+        BatchDTO removed = inventoryManager.registerBatch(batch("Pasta", LocalDate.now().plusDays(20)));
+
+        inventoryManager.deleteBatch(removed.id());
+
+        assertEquals(1, inventoryManager.getBatches().size());
+        assertEquals(kept.id(), inventoryManager.getBatches().get(0).id());
+        assertThrows(NoSuchElementException.class, () -> inventoryManager.deleteBatch(removed.id()));
     }
 
     private CreateBatchRequest batch(String productName, LocalDate expirationDate) {

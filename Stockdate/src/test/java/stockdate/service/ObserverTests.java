@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -49,6 +50,20 @@ class ObserverTests {
 
         verify(first, times(1)).onStockChanged();
         verify(second, times(1)).onStockChanged();
+    }
+
+    @Test
+    void subjectNotifiesObserversAfterDeletingABatch() {
+        Observer observer = mock(Observer.class);
+        BatchEntity existing = batch(10);
+        when(repository.findById(5L)).thenReturn(Optional.of(existing));
+        InventoryManager manager = new InventoryManager(repository, factory, List.of(observer),
+                validator, fixedClock(TODAY));
+
+        manager.deleteBatch(5L);
+
+        verify(repository, times(1)).delete(existing);
+        verify(observer, times(1)).onStockChanged();
     }
 
     @Test

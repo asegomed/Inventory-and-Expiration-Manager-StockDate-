@@ -96,7 +96,8 @@ clients. It only exchanges DTOs, never entities:
 - `controller/`: handles HTTP requests and responses.
   - `InventoryController.java`: exposes batch listing
     (`GET /api/inventory`), creation (`POST /api/inventory`), updates
-    (`PUT /api/inventory/{id}`) and the dashboard summary
+    (`PUT /api/inventory/{id}`), deletion (`DELETE /api/inventory/{id}`) and
+    the dashboard summary
     (`GET /api/dashboard`, delegated to `ExpirationAlertService`).
   - `ApiExceptionHandler.java`: converts invalid-request exceptions to HTTP
     400 responses and missing-batch exceptions to HTTP 404 responses.
@@ -192,7 +193,7 @@ Tests use JUnit 5 and Mockito. JaCoCo measures their coverage after every
 - `StockdateApplicationTests.java`: checks that the Spring context starts.
 - `presentation/controller/InventoryControllerTests.java`: HTTP tests for the
   inventory and dashboard endpoints (in-memory SQLite).
-- `service/InventoryManagerTests.java`: batch registration, listing, update and
+- `service/InventoryManagerTests.java`: batch registration, listing, update, deletion and
   validation (in-memory SQLite).
 - `service/ObserverTests.java`: the subject notifies every observer, and the
   dashboard cache is invalidated on stock or date changes (mocked repository).
